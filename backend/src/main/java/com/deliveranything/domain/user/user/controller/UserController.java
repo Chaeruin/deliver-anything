@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -219,16 +220,21 @@ public class UserController {
                     + "판매자 프로필인 경우 storeId와 프로필 상세 정보도 함께 반환됩니다."
   )
   public ResponseEntity<ApiResponse<SwitchProfileResponse>> switchProfile(
-      @Valid @RequestBody SwitchProfileRequest request) {
+      @Valid @RequestBody SwitchProfileRequest request,
+      @RequestHeader("Authorization") String authorization) {
 
     User currentUser = rq.getActor();
     log.info("프로필 전환 요청: userId={}, targetProfile={}",
         currentUser.getId(), request.targetProfileType());
 
+    // 기존 Access Token 추출
+    String oldAccessToken = authorization.replace("Bearer ", "");
+
     // AuthService가 프로필 전환 + 토큰 재발급 + storeId + 프로필 상세 조회
     SwitchProfileResponse result = authService.switchProfileWithTokenReissue(
         currentUser.getId(),
-        request.targetProfileType()
+        request.targetProfileType(),
+        oldAccessToken // 기존 토큰 전달
     );
 
     // 새 Access Token을 쿠키와 헤더에 설정

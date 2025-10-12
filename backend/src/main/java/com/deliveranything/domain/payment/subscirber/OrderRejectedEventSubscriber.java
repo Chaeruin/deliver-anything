@@ -37,7 +37,6 @@ public class OrderRejectedEventSubscriber implements MessageListener {
     } catch (CustomException e) {
       if (event != null) {
         log.warn("Payment cancel failed for order {}: {}", event.orderId(), e.getMessage());
-        // TODO 결제가 SSE에다가 상점의 개인 사정으로 주문 취소 되었다. 3일 내에 계좌에 직접 환불된다. 전달
       } else {
         log.error("Failed to get payment request message from Redis", e);
       }

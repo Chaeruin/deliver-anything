@@ -50,12 +50,12 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
 
     log.info("OAuth2 로그인 성공: userId={}", userId);
 
-    // ✅ 온보딩 여부에 따라 리다이렉트
-    if (actor.getCurrentActiveProfile() == null) {
-      log.info("온보딩 미완료 사용자, 온보딩 페이지로 이동: userId={}", userId);
-      rq.sendRedirect(frontendUrl + "/onboarding");
+    // 프로필 존재 여부에 따라 리다이렉트
+    if (!actor.hasActiveProfile()) {  // 메서드명 변경
+      log.info("프로필이 없는 사용자, 프로필 생성 페이지로 이동: userId={}", userId);
+      rq.sendRedirect(frontendUrl + "/make-profile");  // 현재 프론트 개발자님이 실제로 쓰고계신 경로 변경!
     } else {
-      log.info("온보딩 완료 사용자, 메인 페이지로 이동: userId={}", userId);
+      log.info("프로필이 있는 사용자, 메인 페이지로 이동: userId={}", userId);
       rq.sendRedirect(frontendUrl);
     }
   }

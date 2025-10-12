@@ -6,7 +6,7 @@ spring:
     open-in-view: false       # Open Session In View 패턴 비활성화 (테스트 시 권장)
 
   datasource:
-    url: jdbc:h2:mem:test;MODE=MySQL
+    url: jdbc:h2:mem:test;MODE=MySQL;INIT=CREATE SCHEMA IF NOT EXISTS GIS;
     driver-class-name: org.h2.Driver
     username: sa
     password:

@@ -14,13 +14,10 @@ import java.util.Arrays;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-
-@Slf4j
 
 @Component
 @RequiredArgsConstructor
@@ -33,11 +30,16 @@ public class Rq {
   @Value("${custom.cookie.domain}")
   private String cookieDomain;
 
+  @Value("${custom.refreshToken.expirationDays}")
+  private int refreshTokenExpirationDays;
+
   // =====================================================================
   // 👤 사용자 관련
   // =====================================================================
 
-  /** 현재 SecurityUser 반환 (인증 객체 기반) */
+  /**
+   * 현재 SecurityUser 반환 (인증 객체 기반)
+   */
   public SecurityUser getSecurityUser() {
     return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
         .map(Authentication::getPrincipal)
@@ -46,27 +48,37 @@ public class Rq {
         .orElse(null);
   }
 
-  /** 현재 사용자 ID 반환 (없으면 null) */
+  /**
+   * 현재 사용자 ID 반환 (없으면 null)
+   */
   public Long getActorId() {
     return Optional.ofNullable(getSecurityUser())
         .map(SecurityUser::getId)
         .orElse(null);
   }
 
-  /** 현재 로그인한 User 반환 (없으면 예외) */
+  /**
+   * 현재 로그인한 User 반환 (없으면 예외)
+   */
   public User getActor() {
     Long userId = getActorId();
-    if (userId == null) throw new CustomException(ErrorCode.TOKEN_NOT_FOUND);
+    if (userId == null) {
+      throw new CustomException(ErrorCode.TOKEN_NOT_FOUND);
+    }
     return userRepository.findByIdWithProfile(userId)
         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
   }
 
-  /** 로그인 여부 확인 */
+  /**
+   * 로그인 여부 확인
+   */
   public boolean isAuthenticated() {
     return getActorId() != null;
   }
 
-  /** 관리자 여부 확인 */
+  /**
+   * 관리자 여부 확인
+   */
   public boolean isAdmin() {
     return Optional.ofNullable(getActor())
         .map(User::isAdmin)
@@ -77,21 +89,27 @@ public class Rq {
   // 🧭 프로필 관련
   // =====================================================================
 
-  /** 현재 활성화된 프로필 반환 (없으면 null) */
+  /**
+   * 현재 활성화된 프로필 반환 (없으면 null)
+   */
   public Profile getCurrentProfile() {
     return Optional.ofNullable(getSecurityUser())
         .map(SecurityUser::getCurrentActiveProfile)
         .orElse(null);
   }
 
-  /** 현재 활성 프로필 ID 반환 (null-safe) */
+  /**
+   * 현재 활성 프로필 ID 반환 (null-safe)
+   */
   public Long getCurrentProfileId() {
     return Optional.ofNullable(getCurrentProfile())
         .map(Profile::getId)
         .orElse(null);
   }
 
-  /** 현재 활성 프로필 타입이 특정 타입인지 확인 */
+  /**
+   * 현재 활성 프로필 타입이 특정 타입인지 확인
+   */
   public boolean hasActiveProfile(ProfileType profileType) {
     return Optional.ofNullable(getCurrentProfile())
         .map(Profile::getType)
@@ -100,29 +118,43 @@ public class Rq {
   }
 
   // 각 프로필 타입별 활성화 여부
-  public boolean isCustomerActive() { return hasActiveProfile(ProfileType.CUSTOMER); }
-  public boolean isSellerActive()   { return hasActiveProfile(ProfileType.SELLER); }
-  public boolean isRiderActive()    { return hasActiveProfile(ProfileType.RIDER); }
+  public boolean isCustomerActive() {
+    return hasActiveProfile(ProfileType.CUSTOMER);
+  }
+
+  public boolean isSellerActive() {
+    return hasActiveProfile(ProfileType.SELLER);
+  }
+
+  public boolean isRiderActive() {
+    return hasActiveProfile(ProfileType.RIDER);
+  }
 
   // =====================================================================
   // 📦 HTTP 헤더 & 쿠키
   // =====================================================================
 
-  /** 요청 헤더 조회 (기본값 지원) */
+  /**
+   * 요청 헤더 조회 (기본값 지원)
+   */
   public String getHeader(String name, String defaultValue) {
     return Optional.ofNullable(req.getHeader(name))
         .filter(value -> !value.isBlank())
         .orElse(defaultValue);
   }
 
-  /** 응답 헤더 설정 (빈 값이면 무시) */
+  /**
+   * 응답 헤더 설정 (빈 값이면 무시)
+   */
   public void setHeader(String name, String value) {
     if (value != null && !value.isBlank()) {
       resp.setHeader(name, value);
     }
   }
 
-  /** 쿠키 값 조회 (기본값 지원) */
+  /**
+   * 쿠키 값 조회 (기본값 지원)
+   */
   public String getCookieValue(String name, String defaultValue) {
     return Optional.ofNullable(req.getCookies())
         .flatMap(cookies -> Arrays.stream(cookies)
@@ -133,13 +165,13 @@ public class Rq {
         .orElse(defaultValue);
   }
 
-  /** 쿠키 설정 (빈 값이면 삭제) */
+  /**
+   * 쿠키 설정 (빈 값이면 삭제)
+   */
   public void setCookie(String name, String value) {
     Cookie cookie = new Cookie(name, value != null ? value : "");
     cookie.setPath("/");
     cookie.setHttpOnly(true);
-
-    log.info("Setting cookie: name={}, value={}, cookieDomain={}", name, value, cookieDomain);
 
     if (!cookieDomain.equals("localhost")) {
       cookie.setSecure(true);
@@ -151,17 +183,17 @@ public class Rq {
       cookie.setAttribute("SameSite", "Lax");
     }
 
-    cookie.setMaxAge((value == null || value.isBlank()) ? 0 : 60 * 60 * 24 * 30); // 30일
-    try {
-      resp.addCookie(cookie);
-      log.info("Cookie added successfully: name={}, domain={}", name, cookie.getDomain());
-    } catch (Exception e) {
-      log.error("Failed to add cookie: name={}, domain={}, error={}", name, cookie.getDomain(), e.getMessage(), e);
-      throw new RuntimeException("Failed to add cookie", e);
-    }
+    int maxAge = (value == null || value.isBlank())
+        ? 0
+        : refreshTokenExpirationDays * 24 * 60 * 60;
+
+    cookie.setMaxAge(maxAge);
+    resp.addCookie(cookie);
   }
 
-  /** 쿠키 삭제 */
+  /**
+   * 쿠키 삭제
+   */
   public void deleteCookie(String name) {
     setCookie(name, "");
   }
@@ -170,23 +202,31 @@ public class Rq {
   // 🔐 JWT 토큰 관련
   // =====================================================================
 
-  /** Authorization 헤더에서 AccessToken 추출 */
+  /**
+   * Authorization 헤더에서 AccessToken 추출
+   */
   public String getAccessTokenFromHeader() {
     String authorization = getHeader("Authorization", "");
     return authorization.startsWith("Bearer ") ? authorization.substring(7) : null;
   }
 
-  /** Authorization 헤더 설정 */
+  /**
+   * Authorization 헤더 설정
+   */
   public void setAccessToken(String accessToken) {
     setHeader("Authorization", "Bearer " + accessToken);
   }
 
-  /** RefreshToken 쿠키 설정 */
+  /**
+   * RefreshToken 쿠키 설정
+   */
   public void setRefreshToken(String refreshToken) {
     setCookie("refreshToken", refreshToken);
   }
 
-  /** RefreshToken 쿠키 삭제 */
+  /**
+   * RefreshToken 쿠키 삭제
+   */
   public void deleteRefreshToken() {
     deleteCookie("refreshToken");
   }
@@ -195,7 +235,9 @@ public class Rq {
   // 🚀 기타
   // =====================================================================
 
-  /** 지정된 URL로 리다이렉트 */
+  /**
+   * 지정된 URL로 리다이렉트
+   */
   @SneakyThrows
   public void sendRedirect(String url) {
     resp.sendRedirect(url);

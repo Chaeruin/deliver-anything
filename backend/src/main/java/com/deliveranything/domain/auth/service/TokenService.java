@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,9 @@ public class TokenService {
   private final AuthTokenService authTokenService;
   private final RedisRefreshTokenRepository redisRefreshTokenRepository;
   private final UserRepository userRepository;
+
+  @Value("${custom.refreshToken.expirationDays}")
+  private int refreshTokenExpirationDays;
 
   /**
    * JWT Access Token 생성
@@ -40,7 +44,7 @@ public class TokenService {
 
     // 2. 새 토큰 생성
     String tokenValue = UUID.randomUUID().toString();
-    LocalDateTime expiresAt = LocalDateTime.now().plusDays(30);
+    LocalDateTime expiresAt = LocalDateTime.now().plusDays(refreshTokenExpirationDays);
 
     RedisRefreshTokenDto redisToken = RedisRefreshTokenDto.builder()
         .userId(user.getId())

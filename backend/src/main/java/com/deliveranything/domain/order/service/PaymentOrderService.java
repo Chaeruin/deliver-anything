@@ -27,7 +27,7 @@ public class PaymentOrderService {
     order.isPayable();
 
     eventPublisher.publishEvent(new OrderPaymentRequestedEvent(order.getId(), paymentKey,
-        merchantUid, order.getTotalPrice().longValue()));
+        merchantUid, order.getTotalPrice()));
 
     return OrderResponse.from(order);
   }

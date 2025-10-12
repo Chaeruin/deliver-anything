@@ -8,7 +8,9 @@ import com.deliveranything.domain.payment.dto.PaymentConfirmRequest;
 import com.deliveranything.domain.payment.dto.PaymentConfirmResponse;
 import com.deliveranything.domain.payment.entitiy.Payment;
 import com.deliveranything.domain.payment.enums.PaymentStatus;
+import com.deliveranything.domain.payment.event.PaymentCancelFailedEvent;
 import com.deliveranything.domain.payment.event.PaymentCancelSuccessEvent;
+import com.deliveranything.domain.payment.event.PaymentFailedEvent;
 import com.deliveranything.domain.payment.event.PaymentSuccessEvent;
 import com.deliveranything.domain.payment.repository.PaymentRepository;
 import com.deliveranything.global.exception.CustomException;
@@ -59,6 +61,7 @@ public class PaymentService {
 
     if (orderAmount.equals(payment.getAmount())) {
       payment.updateStatus(PaymentStatus.FAILED);
+      eventPublisher.publishEvent(new PaymentFailedEvent(merchantUid));
       throw new CustomException(ErrorCode.PAYMENT_AMOUNT_INVALID);
     }
 
@@ -72,6 +75,7 @@ public class PaymentService {
 
     if (pgResponse == null) {
       payment.updateStatus(PaymentStatus.FAILED);
+      eventPublisher.publishEvent(new PaymentFailedEvent(merchantUid));
       throw new CustomException(ErrorCode.PG_PAYMENT_NOT_FOUND);
     }
 
@@ -79,6 +83,7 @@ public class PaymentService {
     if (!(paymentKey.equals(pgResponse.paymentKey()) && merchantUid.equals(pgResponse.orderId())
         && orderAmount.equals(pgResponse.totalAmount()))) {
       payment.updateStatus(PaymentStatus.FAILED);
+      eventPublisher.publishEvent(new PaymentFailedEvent(merchantUid));
       throw new CustomException(ErrorCode.PG_PAYMENT_CONFIRM_FAILED);
     }
 
@@ -100,17 +105,24 @@ public class PaymentService {
         .block();
 
     if (pgResponse == null) {
+      eventPublisher.publishEvent(new PaymentCancelFailedEvent(payment.getMerchantUid()));
+
       paymentRepository.save(new Payment(merchantUid, payment.getPaymentKey(), payment.getAmount(),
           PaymentStatus.CANCEL_FAILED));
+
       throw new CustomException(ErrorCode.PG_PAYMENT_CANCEL_FAILED);
     }
 
     // zero trust 검증 (결제 번호, 주문 번호, 가격)
     if (!(payment.getPaymentKey().equals(pgResponse.paymentKey())
         && merchantUid.equals(pgResponse.orderId()) && pgResponse.cancels().size() == 1
-        && payment.getAmount().longValue() == pgResponse.cancels().getFirst().cancelAmount())) {
+        && payment.getAmount().longValue() == pgResponse.cancels().getFirst().cancelAmount())
+    ) {
+      eventPublisher.publishEvent(new PaymentCancelFailedEvent(payment.getMerchantUid()));
+
       paymentRepository.save(new Payment(merchantUid, payment.getPaymentKey(), payment.getAmount(),
           PaymentStatus.CANCEL_FAILED));
+
       throw new CustomException(ErrorCode.PG_PAYMENT_CANCEL_FAILED);
     }
 

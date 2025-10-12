@@ -1,6 +1,7 @@
 package com.deliveranything.domain.auth.service;
 
 import com.deliveranything.domain.auth.enums.SocialProvider;
+import com.deliveranything.domain.store.store.service.StoreService;
 import com.deliveranything.domain.user.profile.dto.SwitchProfileResponse;
 import com.deliveranything.domain.user.profile.dto.customer.CustomerProfileDetail;
 import com.deliveranything.domain.user.profile.dto.rider.RiderProfileDetail;
@@ -33,8 +34,12 @@ public class AuthService {
 
   private final UserRepository userRepository;
   private final ProfileRepository profileRepository;
+
   private final TokenService tokenService;
   private final ProfileService profileService;
+  private final TokenBlacklistService tokenBlacklistService;
+  private final StoreService storeService;
+
   private final PasswordEncoder passwordEncoder;
 
   // 프로필 상세 조회용 Repository 추가
@@ -42,8 +47,6 @@ public class AuthService {
   private final SellerProfileRepository sellerProfileRepository;
   private final RiderProfileRepository riderProfileRepository;
 
-  // StoreService 추가 (상점 조회용)
-  // private final StoreService storeService;  // TODO: 주석 해제 후 사용
 
   /**
    * 일반 회원가입
@@ -179,18 +182,37 @@ public class AuthService {
    * 로그아웃 (현재 기기만)
    */
   @Transactional
-  public void logout(Long userId, String deviceInfo) {
+  public void logout(Long userId, String deviceInfo, String accessToken) {
+    // 특정 기기의 Refresh Token 무효화
     tokenService.invalidateRefreshToken(userId, deviceInfo);
     log.info("로그아웃 완료: userId={}, deviceInfo={}", userId, deviceInfo);
+
+    // Access Token 블랙리스트 등록
+    if (accessToken != null && !accessToken.isEmpty()) {
+      tokenBlacklistService.addToBlacklist(accessToken);
+      log.info("로그아웃 완료 및 accessToken 블랙리스트 등록: userId={}", userId);
+    } else {
+      log.info("로그아웃 완료: userId={}, deviceInfo={}", userId, deviceInfo);
+    }
+
   }
 
   /**
    * 전체 로그아웃 (모든 기기)
    */
   @Transactional
-  public void logoutAll(Long userId) {
+  public void logoutAll(Long userId, String accessToken) {
+    // 모든 기기 리프레시 토큰 무효화
     tokenService.invalidateAllRefreshTokens(userId);
     log.info("전체 로그아웃 완료: userId={}", userId);
+
+    // 현재 Access Token 블랙리스트 등록 -> 다른 기기들의 Access Token은 자연 만료(직접 추적해서 모두 수동만료 시키려면 JWT의 stateless 장점 사라진다고 생각해서 이렇게 구현 )
+    if (accessToken != null && !accessToken.isEmpty()) {
+      tokenBlacklistService.addToBlacklist(accessToken);
+      log.info("전체 로그아웃 완료 및 accessToken 블랙리스트 등록: userId={}", userId);
+    } else {
+      log.info("전체 로그아웃 완료: userId={}", userId);
+    }
   }
 
   /**
@@ -213,7 +235,8 @@ public class AuthService {
   @Transactional
   public SwitchProfileResponse switchProfileWithTokenReissue(
       Long userId,
-      ProfileType targetProfileType) {
+      ProfileType targetProfileType,
+      String oldAccessToken) {
 
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -243,6 +266,12 @@ public class AuthService {
           userId, targetProfileType);
 
       String newAccessToken = tokenService.genAccessToken(user);
+
+      // 기존 AccessToken 블랙리스트 등록
+      if (oldAccessToken != null && !oldAccessToken.isEmpty()) {
+        tokenBlacklistService.addToBlacklist(oldAccessToken);
+        log.info("프로필 전환 - 기존 accessToken 블랙리스트 등록: userId={}", userId);
+      }
 
       // storeId 조회
       Long storeId = getStoreIdIfSeller(user);
@@ -276,6 +305,12 @@ public class AuthService {
 
     // Access Token만 재발급 (Refresh Token 유지)
     String newAccessToken = tokenService.genAccessToken(updatedUser);
+
+    // 기존 AccessToken 블랙리스트 등록
+    if (oldAccessToken != null && !oldAccessToken.isEmpty()) {
+      tokenBlacklistService.addToBlacklist(oldAccessToken);
+      log.info("프로필 전환 완료 및 기존 accessToken 블랙리스트 등록: userId={}", userId);
+    }
 
     // storeId 조회
     Long storeId = getStoreIdIfSeller(updatedUser);
@@ -312,13 +347,7 @@ public class AuthService {
       return null;
     }
 
-    // StoreService를 통해 상점 ID 조회
-    // TODO: StoreService 의존성 주입 후 주석 해제
-    // return storeService.getStoreIdBySellerProfileId(sellerProfileId);
-
-    // ⚠️ 임시: StoreService 없을 때는 null 반환
-    log.debug("StoreService 미구현: sellerProfileId={}", sellerProfileId);
-    return null;
+    return storeService.getStoreIdBySellerProfileId(sellerProfileId);
   }
 
   /**

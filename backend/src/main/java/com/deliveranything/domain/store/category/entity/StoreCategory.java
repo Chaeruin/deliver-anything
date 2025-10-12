@@ -17,6 +17,10 @@ public class StoreCategory extends BaseEntity {
   @Column(nullable = false)
   private String name;
 
+  public StoreCategory(String name) {
+    this.name = name;
+  }
+
 //  @OneToMany(mappedBy = "storeCategory")
 //  private List<Store> stores = new ArrayList<>();
 }

@@ -14,6 +14,7 @@ import com.deliveranything.global.security.auth.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -67,6 +68,29 @@ public class CustomerOrderController {
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("소비자 주문 단일 조회 성공",
         customerOrderService.getCustomerOrder(orderId, securityUser.getId())));
+  }
+
+  @GetMapping("/in-progress")
+  @Operation(summary = "진행중인 주문 조회", description = "소비자가 진행중인 주문 내역을 요청한 경우")
+  @PreAuthorize("@profileSecurity.isCustomer(#securityUser)")
+  public ResponseEntity<ApiResponse<List<OrderResponse>>> getInProgressOrders(
+      @AuthenticationPrincipal SecurityUser securityUser
+  ) {
+    return ResponseEntity.ok().body(ApiResponse.success("진행중인 소비자 주문 조회 성공",
+        customerOrderService.getProgressingOrders(securityUser.getId())));
+  }
+
+  @GetMapping("/completed")
+  @Operation(summary = "배달 완료된 주문 조회", description = "소비자가 배달 완료된 주문 내역을 요청한 경우")
+  @PreAuthorize("@profileSecurity.isCustomer(#securityUser)")
+  public ResponseEntity<ApiResponse<CursorPageResponse<OrderResponse>>> getCompletedOrders(
+      @AuthenticationPrincipal SecurityUser securityUser,
+      @RequestParam(required = false) String nextPageToken,
+      @RequestParam(defaultValue = "10") int size
+  ) {
+    return ResponseEntity.ok().body(ApiResponse.success("배달 완료된 소비자 주문 조회 성공",
+        customerOrderService.getCompletedOrdersByCursor(securityUser.getId(), nextPageToken,
+            size)));
   }
 
   @PostMapping("/{merchantUid}/pay")

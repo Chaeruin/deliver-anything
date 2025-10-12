@@ -37,4 +37,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
       ORDER BY o.createdAt ASC
       """)
   List<Order> findOrdersWithStoreByStoreIdAndStatuses(Long storeId, List<OrderStatus> statuses);
+
+  @Query("""
+      SELECT o
+      FROM Order o
+      JOIN FETCH o.store s
+      WHERE s.id = :customerId AND o.status IN :statuses
+      ORDER BY o.createdAt DESC
+      """)
+  List<Order> findOrdersWithStoreByCustomerIdAndStatuses(Long customerId,
+      List<OrderStatus> statuses);
 }

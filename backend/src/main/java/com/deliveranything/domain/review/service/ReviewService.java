@@ -39,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.ZSetOperations.TypedTuple;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -179,7 +178,7 @@ public class ReviewService {
     ProfileType profileType = profile.getType();
     Long profileId = profile.getId();
 
-    String[] decodedCursor = CursorUtil.decode(cursor);
+    String[] decodedCursor = (String[]) CursorUtil.decode(cursor);
 
     //실제 조회
     List<ReviewResponse> reviewList = getReviewsByProfile(profileType, profileId, sort,
@@ -227,7 +226,7 @@ public class ReviewService {
     log.info("상점 리뷰 리스트 조회 요청 - storeId: {}, sort: {}, cursor: {}, size: {}", storeId, sort, cursor,
         size);
 
-    String[] decodedCursor = CursorUtil.decode(cursor);
+    String[] decodedCursor = (String[]) CursorUtil.decode(cursor);
 
     //실제 조회
     List<Review> reviews = reviewRepository.getStoreReviews(storeId, sort,

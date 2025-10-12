@@ -115,13 +115,21 @@ public class AuthController {
   @PostMapping("/logout")
   public ResponseEntity<ApiResponse<Void>> logout(
       @AuthenticationPrincipal SecurityUser securityUser,
+      @RequestHeader("Authorization") String authorization,
       @RequestHeader(value = "User-Agent", required = false) String userAgent
   ) {
+    // Bearer 접두사 제거
+    String accessToken = authorization.replace("Bearer ", "");
+
     String deviceInfo = userAgent != null ? userAgent : "unknown";
-    authService.logout(securityUser.getId(), deviceInfo);
+
+    //  accessToken 파라미터 전달
+    authService.logout(securityUser.getId(), deviceInfo, accessToken);
 
     // 쿠키 삭제
     rq.deleteRefreshToken();
+
+    log.info("로그아웃 완료: userId={}, deviceInfo={}", securityUser.getId(), deviceInfo);
 
     return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다.", null));
   }
@@ -131,12 +139,17 @@ public class AuthController {
    */
   @PostMapping("/logout/all")
   public ResponseEntity<ApiResponse<Void>> logoutAll(
-      @AuthenticationPrincipal SecurityUser securityUser
+      @AuthenticationPrincipal SecurityUser securityUser,
+      @RequestHeader("Authorization") String authorization
   ) {
-    authService.logoutAll(securityUser.getId());
+    String accessToken = authorization.replace("Bearer ", "");
+
+    authService.logoutAll(securityUser.getId(), accessToken);
 
     // 쿠키 삭제
     rq.deleteRefreshToken();
+
+    log.info("전체 로그아웃 완료: userId={}", securityUser.getId());
 
     return ResponseEntity.ok(ApiResponse.success());
   }

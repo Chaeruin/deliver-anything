@@ -1,7 +1,6 @@
 package com.deliveranything.domain.payment.subscirber;
 
 import com.deliveranything.domain.order.event.OrderPaymentRequestedEvent;
-import com.deliveranything.domain.payment.event.PaymentFailedEvent;
 import com.deliveranything.domain.payment.service.PaymentService;
 import com.deliveranything.global.exception.CustomException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +40,6 @@ public class OrderPaymentRequestedEventSubscriber implements MessageListener {
     } catch (CustomException e) {
       if (event != null) {
         log.warn("Payment failed for order {}: {}", event.orderId(), e.getMessage());
-        eventPublisher.publishEvent(new PaymentFailedEvent(event.merchantUid()));
       } else {
         log.error("Failed to get payment request message from Redis", e);
       }

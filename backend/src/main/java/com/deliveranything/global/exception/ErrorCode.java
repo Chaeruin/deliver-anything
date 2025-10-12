@@ -48,7 +48,7 @@ public enum ErrorCode {
   ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER-404", "주문 정보를 찾을 수 없습니다."),
   CUSTOMER_ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER-CUSTOMER-404", "소비자의 주문을 찾을 수 없습니다."),
   ORDER_PAY_UNAVAILABLE(HttpStatus.CONFLICT, "ORDER-409", "결제가 불가능한 주문입니다."),
-  ORDER_CANCEL_UNAVAILABLE(HttpStatus.CONFLICT, "ORDER-410", "결제 취소가 불가능한 주문입니다."),
+  ORDER_CANCEL_UNAVAILABLE(HttpStatus.CONFLICT, "ORDER-410", "상점이 이미 준비중인 주문입니다."),
 
   // 결제 관련 오류
   PG_PAYMENT_CONFIRM_FAILED(HttpStatus.BAD_REQUEST, "PG-PAYMENT-001",

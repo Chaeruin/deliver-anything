@@ -1,6 +1,7 @@
 package com.deliveranything.global.security.filter;
 
 import com.deliveranything.domain.auth.service.AuthTokenService;
+import com.deliveranything.domain.auth.service.TokenBlacklistService;
 import com.deliveranything.domain.auth.service.UserAuthorityProvider;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.domain.user.user.repository.UserRepository;
@@ -33,6 +34,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
   private final UserRepository userRepository;
   private final AuthTokenService authTokenService;
   private final UserAuthorityProvider userAuthorityProvider;
+  private final TokenBlacklistService tokenBlacklistService;
   private final ObjectMapper objectMapper;
 
   @Override
@@ -95,6 +97,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
   }
 
   private User authenticateWithAccessToken(String accessToken) {
+
+    // 블랙리스트 체크
+    if (tokenBlacklistService.isBlacklisted(accessToken)) {
+      throw new CustomException(ErrorCode.TOKEN_INVALID);
+    }
+
     if (!authTokenService.isValidToken(accessToken) || authTokenService.isTokenExpired(
         accessToken)) {
       return null;

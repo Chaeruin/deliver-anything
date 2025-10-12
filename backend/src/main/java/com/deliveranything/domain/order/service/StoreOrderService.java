@@ -37,7 +37,7 @@ public class StoreOrderService {
   ) {
     LocalDateTime lastCreatedAt = null;
     Long lastOrderId = null;
-    String[] decodedParts = CursorUtil.decode(nextPageToken);
+    String[] decodedParts = (String[]) CursorUtil.decode(nextPageToken);
 
     if (decodedParts != null && decodedParts.length == 2) {
       try {

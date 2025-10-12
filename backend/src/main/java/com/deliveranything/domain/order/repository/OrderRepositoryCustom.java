@@ -49,6 +49,23 @@ public class OrderRepositoryCustom {
         .fetch();
   }
 
+  public List<Order> findOrdersWithStoreByCustomerId(Long customerId, List<OrderStatus> statuses,
+      LocalDateTime lastCreatedAt, Long lastOrderId, int size) {
+    QOrder order = QOrder.order;
+    QStore store = QStore.store;
+
+    return queryFactory.selectFrom(order)
+        .join(order.store, store).fetchJoin()
+        .where(
+            order.customer.id.eq(customerId),
+            statusIn(statuses),
+            storeCursorCondition(lastCreatedAt, lastOrderId)
+        )
+        .orderBy(order.createdAt.desc(), order.id.desc())
+        .limit(size)
+        .fetch();
+  }
+
   private BooleanExpression statusIn(List<OrderStatus> statuses) {
     return statuses != null && !statuses.isEmpty() ? QOrder.order.status.in(statuses) : null;
   }

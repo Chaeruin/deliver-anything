@@ -157,4 +157,25 @@ public class AuthTokenService {
     Map<String, Object> payload = payload(accessToken);
     return payload != null ? (Long) payload.get("currentActiveProfileId") : null;
   }
+
+  /**
+   * 토큰의 만료 시간 반환 (밀리초)
+   */
+  public long getExpirationTime(String token) {
+    SecretKey secretKey = Keys.hmacShaKeyFor(jwtSecretKey.getBytes());
+
+    try {
+      Claims claims = Jwts
+          .parser()
+          .verifyWith(secretKey)
+          .build()
+          .parseSignedClaims(token)
+          .getPayload();
+
+      return claims.getExpiration().getTime();
+    } catch (Exception e) {
+      log.error("토큰 만료 시간 조회 실패: {}", e.getMessage());
+      return 0;
+    }
+  }
 }

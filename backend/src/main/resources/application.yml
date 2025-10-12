@@ -7,7 +7,7 @@ spring:
 
   sql:
     init:
-      mode: always
+      mode: never
 
   jpa:
     defer-datasource-initialization: true
@@ -26,7 +26,7 @@ spring:
         generate_statistics: true           # Hibernate 통계 출력 (캐시 히트율, 쿼리 횟수 등)
 
   datasource:
-    url: jdbc:h2:./dev;MODE=MySQL        # H2 데이터베이스 (MySQL 호환 모드)
+    url: jdbc:h2:./dev;MODE=MySQL;INIT=CREATE SCHEMA IF NOT EXISTS GIS;
     driver-class-name: org.h2.Driver     # H2 드라이버
     username: sa                         # 기본 사용자
     password:                            # 비밀번호 없음
@@ -44,7 +44,7 @@ spring:
 
   elasticsearch:
     uris:
-      - http://localhost:9200
+      - localhost:9200
 
   security:
     oauth2:
@@ -129,6 +129,8 @@ custom:
     secretKey: ${JWT_SECRET_KEY:your_jwt_secret_key_here}
   accessToken:
     expirationSeconds: "#{60*20}"
+  refreshToken:
+    expirationDays: 14
 
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}

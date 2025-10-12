@@ -10,6 +10,7 @@ public enum OrderStatus {
   REJECTED,
   CANCELED,
   CANCELLATION_REQUESTED,
+  CANCEL_FAILED,
   PAYMENT_FAILED;
 
   public boolean canTransitTo(OrderStatus next) {
@@ -20,8 +21,8 @@ public enum OrderStatus {
       case PREPARING -> next == RIDER_ASSIGNED;
       case RIDER_ASSIGNED -> next == DELIVERING;
       case DELIVERING -> next == COMPLETED;
-      case CANCELLATION_REQUESTED -> next == PENDING;
-      case COMPLETED, REJECTED, CANCELED, PAYMENT_FAILED -> false;
+      case CANCELLATION_REQUESTED -> next == PENDING || next == CANCEL_FAILED;
+      case COMPLETED, REJECTED, CANCELED, CANCEL_FAILED, PAYMENT_FAILED -> false;
     };
   }
 }

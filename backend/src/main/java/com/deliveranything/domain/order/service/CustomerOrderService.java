@@ -5,6 +5,7 @@ import com.deliveranything.domain.order.dto.OrderItemRequest;
 import com.deliveranything.domain.order.dto.OrderResponse;
 import com.deliveranything.domain.order.entity.Order;
 import com.deliveranything.domain.order.entity.OrderItem;
+import com.deliveranything.domain.order.enums.OrderStatus;
 import com.deliveranything.domain.order.event.OrderCreatedEvent;
 import com.deliveranything.domain.order.repository.OrderRepository;
 import com.deliveranything.domain.order.repository.OrderRepositoryCustom;
@@ -14,7 +15,9 @@ import com.deliveranything.domain.user.profile.service.CustomerProfileService;
 import com.deliveranything.global.common.CursorPageResponse;
 import com.deliveranything.global.exception.CustomException;
 import com.deliveranything.global.exception.ErrorCode;
+import com.deliveranything.global.util.CursorUtil;
 import com.deliveranything.global.util.PointUtil;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -94,5 +97,52 @@ public class CustomerOrderService {
     return OrderResponse.from(
         orderRepository.findOrderWithStoreByIdAndCustomerId(orderId, customerId)
             .orElseThrow(() -> new CustomException(ErrorCode.CUSTOMER_ORDER_NOT_FOUND)));
+  }
+
+  @Transactional(readOnly = true)
+  public List<OrderResponse> getProgressingOrders(Long customerId) {
+    return orderRepository.findOrdersWithStoreByCustomerIdAndStatuses(customerId, List.of(
+            OrderStatus.PENDING, OrderStatus.PREPARING, OrderStatus.RIDER_ASSIGNED,
+            OrderStatus.DELIVERING)).stream()
+        .map(OrderResponse::from)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public CursorPageResponse<OrderResponse> getCompletedOrdersByCursor(
+      Long customerId,
+      String nextPageToken,
+      int size
+  ) {
+    LocalDateTime lastCreatedAt = null;
+    Long lastOrderId = null;
+    String[] decodedParts = (String[]) CursorUtil.decode(nextPageToken);
+
+    if (decodedParts != null && decodedParts.length == 2) {
+      try {
+        lastCreatedAt = LocalDateTime.parse(decodedParts[0]);
+        lastOrderId = Long.parseLong(decodedParts[1]);
+      } catch (NumberFormatException e) {
+        lastCreatedAt = null;
+        lastOrderId = null;
+      }
+    }
+
+    List<Order> cursorOrders = orderRepositoryCustom.findOrdersWithStoreByCustomerId(customerId,
+        List.of(OrderStatus.COMPLETED), lastCreatedAt, lastOrderId, size + 1);
+
+    List<OrderResponse> cursorResponses = cursorOrders.stream()
+        .limit(size)
+        .map(OrderResponse::from)
+        .toList();
+
+    boolean hasNext = cursorOrders.size() > size;
+    OrderResponse lastResponse = cursorResponses.getLast();
+
+    return new CursorPageResponse<>(
+        cursorResponses,
+        hasNext ? CursorUtil.encode(lastResponse.createdAt(), lastResponse.id()) : null,
+        hasNext
+    );
   }
 }

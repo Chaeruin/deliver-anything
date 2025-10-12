@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * 판매자 프로필 온보딩 데이터
+ * 판매자 프로필 생성 데이터
  */
 public record SellerProfileCreateData(
     @NotBlank(message = "닉네임은 필수 입력 사항입니다.")

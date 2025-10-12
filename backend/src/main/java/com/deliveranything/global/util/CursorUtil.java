@@ -1,38 +1,31 @@
 package com.deliveranything.global.util;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Base64;
-import java.util.stream.Collectors;
 import org.springframework.util.StringUtils;
 
 public final class CursorUtil {
 
-  private static final String DELIMITER = "_";
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private CursorUtil() {
-    // Prevent instantiation
-  }
+  private CursorUtil() {}
 
   public static String encode(Object... keys) {
-    if (keys == null || keys.length == 0) {
-      return null;
+    if (keys == null || keys.length == 0) return null;
+    try {
+      byte[] jsonBytes = OBJECT_MAPPER.writeValueAsBytes(keys);
+      return Base64.getEncoder().encodeToString(jsonBytes);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to encode cursor", e);
     }
-    String rawCursor = Arrays.stream(keys)
-        .map(String::valueOf)
-        .collect(Collectors.joining(DELIMITER));
-    return Base64.getEncoder().encodeToString(rawCursor.getBytes(StandardCharsets.UTF_8));
   }
 
-  public static String[] decode(String cursor) {
-    if (!StringUtils.hasText(cursor)) {
-      return null;
-    }
+  public static Object[] decode(String cursor) {
+    if (!StringUtils.hasText(cursor)) return null;
     try {
-      String decoded = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
-      return decoded.split(DELIMITER);
-    } catch (IllegalArgumentException e) {
-      // Handle invalid Base64 format
+      byte[] decodedBytes = Base64.getDecoder().decode(cursor);
+      return OBJECT_MAPPER.readValue(decodedBytes, Object[].class);
+    } catch (Exception e) {
       return null;
     }
   }

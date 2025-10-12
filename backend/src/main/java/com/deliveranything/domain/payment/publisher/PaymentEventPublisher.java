@@ -1,5 +1,6 @@
 package com.deliveranything.domain.payment.publisher;
 
+import com.deliveranything.domain.payment.event.PaymentCancelFailedEvent;
 import com.deliveranything.domain.payment.event.PaymentCancelSuccessEvent;
 import com.deliveranything.domain.payment.event.PaymentFailedEvent;
 import com.deliveranything.domain.payment.event.PaymentSuccessEvent;
@@ -28,5 +29,10 @@ public class PaymentEventPublisher {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handlePaymentCancelSuccessEvent(PaymentCancelSuccessEvent event) {
     redisTemplate.convertAndSend("payment-cancel-success-event", event);
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handlePaymentCancelFailedEvent(PaymentCancelFailedEvent event) {
+    redisTemplate.convertAndSend("payment-cancel-failed-event", event);
   }
 }

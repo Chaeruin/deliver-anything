@@ -202,7 +202,7 @@ public class DeliveryService {
     Long lastOrderId = null;
 
     if (nextPageToken != null) {
-      String[] decoded = CursorUtil.decode(nextPageToken);
+      String[] decoded = (String[]) CursorUtil.decode(nextPageToken);
 
       if (decoded != null && decoded.length == 2) {
         try {

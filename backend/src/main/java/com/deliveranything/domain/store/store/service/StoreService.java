@@ -92,7 +92,8 @@ public class StoreService {
       throw new CustomException(ErrorCode.STORE_NOT_READY_FOR_OPENING);
     }
 
-    StoreStatus newStatus = (store.getStatus() == StoreStatus.OPEN) ? StoreStatus.CLOSED : StoreStatus.OPEN;
+    StoreStatus newStatus =
+        (store.getStatus() == StoreStatus.OPEN) ? StoreStatus.CLOSED : StoreStatus.OPEN;
     store.updateStatus(newStatus);
 
     eventPublisher.publishEvent(new StoreSavedEvent(store.getId()));
@@ -103,4 +104,14 @@ public class StoreService {
   public Store getStoreById(Long storeId) {
     return storeRepository.getById(storeId);
   }
+
+  /**
+   * author: darancode - SellerProfile ID로 Store ID 조회 Store가 없으면 null 반환
+   */
+  public Long getStoreIdBySellerProfileId(Long sellerProfileId) {
+    return storeRepository.findBySellerProfileId(sellerProfileId)
+        .map(Store::getId)
+        .orElse(null);
+  }
+
 }

@@ -2,15 +2,19 @@ package com.deliveranything.domain.search.store.document;
 
 import com.deliveranything.domain.store.store.entity.Store;
 import com.deliveranything.domain.store.store.enums.StoreStatus;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.GeoPointField;
 import org.springframework.data.elasticsearch.core.geo.GeoPoint;
 
 @Getter
@@ -40,11 +44,14 @@ public class StoreDocument {
   @Field(type = FieldType.Text, name = "road_address")
   private String roadAddress;
 
-  @Field(type = FieldType.Object, name = "location")
+  @GeoPointField
   private GeoPoint location;
 
   @Field(type = FieldType.Keyword, name = "status")
   private StoreStatus status;
+
+  @Field(type = FieldType.Date, name = "created_at", format = DateFormat.date_time)
+  private OffsetDateTime createdAt;
 
   @Setter
   @Builder.Default
@@ -62,6 +69,7 @@ public class StoreDocument {
         .categoryId(store.getStoreCategory().getId())
         .roadAddress(store.getRoadAddr())
         .imageUrl(store.getImageUrl())
+        .createdAt(store.getCreatedAt().atOffset(ZoneOffset.ofHours(9)))
         .build();
   }
 }

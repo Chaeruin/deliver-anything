@@ -87,7 +87,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         user.getUsername(),
         user.getEmail(),
         user.getPassword(),
-        user.getCurrentActiveProfile(), // 온보딩 전이면 null
+        user.getCurrentActiveProfile(), // 프로필 생성 전이면 null
         userAuthorityProvider.getAuthorities(user)
     );
   }
