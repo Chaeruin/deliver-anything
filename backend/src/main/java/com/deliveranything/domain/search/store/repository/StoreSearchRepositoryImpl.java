@@ -33,7 +33,6 @@ public class StoreSearchRepositoryImpl implements StoreSearchRepositoryCustom {
   private static final String FIELD_KEYWORDS = "keywords";
   private static final String FIELD_CATEGORY_ID = "category_id";
   private static final String FIELD_LOCATION = "location";
-  private static final String SORT_ID = "id";
 
   @Override
   public CursorPageResponse<StoreDocument> search(StoreSearchRequest request) {
@@ -58,7 +57,6 @@ public class StoreSearchRepositoryImpl implements StoreSearchRepositoryCustom {
               .order(SortOrder.Asc)));
     }
 
-    // _id 정렬 또한 알 수 없는 이유로 실패하여, 가장 안정적인 _doc 순서로 정렬;;
     queryBuilder.withSort(s -> s.field(f -> f.field("_doc").order(SortOrder.Asc)));
 
     // 커서(search_after) 처리
