@@ -1,4 +1,4 @@
-package com.deliveranything.domain.order.subscriber;
+package com.deliveranything.domain.order.subscriber.payment;
 
 import com.deliveranything.domain.order.service.OrderService;
 import com.deliveranything.domain.payment.event.PaymentCancelFailedEvent;

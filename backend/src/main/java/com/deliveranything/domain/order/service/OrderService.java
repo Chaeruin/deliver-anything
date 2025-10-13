@@ -8,19 +8,28 @@ import com.deliveranything.domain.order.event.OrderCompletedEvent;
 import com.deliveranything.domain.order.event.OrderPaymentFailedEvent;
 import com.deliveranything.domain.order.event.OrderPaymentSucceededEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderCancelFailedForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderCanceledForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderCreateFailedForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderCreatedForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderPaidForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderPaymentFailedForCustomerEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderPreparingForCustomerEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderStatusChangedForCustomerEvent;
 import com.deliveranything.domain.order.event.sse.seller.OrderCancelFailedForSellerEvent;
+import com.deliveranything.domain.order.event.sse.seller.OrderCanceledForSellerEvent;
+import com.deliveranything.domain.order.event.sse.seller.OrderPaidForSellerEvent;
 import com.deliveranything.domain.order.event.sse.seller.OrderPreparingForSellerEvent;
 import com.deliveranything.domain.order.event.sse.seller.OrderStatusChangedForSellerEvent;
 import com.deliveranything.domain.order.repository.OrderRepository;
 import com.deliveranything.global.exception.CustomException;
 import com.deliveranything.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class OrderService {
@@ -32,11 +41,15 @@ public class OrderService {
   public void processPaymentCompletion(String merchantUid) {
     Order order = getOrderWithStoreByMerchantId(merchantUid);
     eventPublisher.publishEvent(OrderPaymentSucceededEvent.fromOrder(order));
+  }
 
-    // TODO: 후에 StockCommittedEvent 듣고 그때 주문 상태 수정한 후에 아래 부분들 새 메서드에서 보내야함.
-//    order.updateStatus(OrderStatus.PENDING);
-//    eventPublisher.publishEvent(OrderPaidForCustomerEvent.fromOrder(order));
-//    eventPublisher.publishEvent(OrderPaidForSellerEvent.fromOrder(order));
+  @Transactional
+  public void processStockCommitted(Long orderId) {
+    Order order = getOrderById(orderId);
+    order.updateStatus(OrderStatus.PENDING);
+
+    eventPublisher.publishEvent(OrderPaidForCustomerEvent.fromOrder(order));
+    eventPublisher.publishEvent(OrderPaidForSellerEvent.fromOrder(order));
   }
 
   @Transactional
@@ -52,10 +65,14 @@ public class OrderService {
   public void processPaymentFailure(String merchantUid) {
     Order order = getOrderByMerchantId(merchantUid);
     eventPublisher.publishEvent(OrderPaymentFailedEvent.fromOrder(order));
+  }
 
-    // TODO: 후에 StockReleasedEvent 듣고 그때 주문 상태 수정한 후에 아래 부분들 새 메서드에서 보내야함.
-//    order.updateStatus(OrderStatus.PAYMENT_FAILED);
-//    eventPublisher.publishEvent(OrderPaymentFailedForCustomerEvent.fromOrder(order));
+  @Transactional
+  public void processStockReleased(Long orderId) {
+    Order order = getOrderById(orderId);
+    order.updateStatus(OrderStatus.PAYMENT_FAILED);
+
+    eventPublisher.publishEvent(OrderPaymentFailedForCustomerEvent.fromOrder(order));
   }
 
   @Transactional
@@ -69,9 +86,14 @@ public class OrderService {
     }
 
     eventPublisher.publishEvent(OrderCancelSucceededEvent.fromOrder(order));
-    // TODO: 후에 StockReplensishedEvent 듣고 그때 주문 상태 수정한 후에 아래 부분들 새 메서드에서 보내야함.
-//    eventPublisher.publishEvent(OrderCanceledForCustomerEvent.fromOrder(order));
-//    eventPublisher.publishEvent(OrderCanceledForSellerEvent.fromOrder(order));
+  }
+
+  @Transactional
+  public void processStockReplenished(Long orderId) {
+    Order order = getOrderById(orderId);
+
+    eventPublisher.publishEvent(OrderCanceledForCustomerEvent.fromOrder(order));
+    eventPublisher.publishEvent(OrderCanceledForSellerEvent.fromOrder(order));
   }
 
   @Transactional
@@ -109,6 +131,23 @@ public class OrderService {
     eventPublisher.publishEvent(OrderCompletedEvent.fromOrder(order, riderId, sellerId));
     eventPublisher.publishEvent(OrderStatusChangedForCustomerEvent.fromOrder(order));
     eventPublisher.publishEvent(OrderStatusChangedForSellerEvent.fromOrder(order));
+  }
+
+  @Transactional(readOnly = true)
+  public void processStockReserved(Long orderId) {
+    Order order = getOrderById(orderId);
+    eventPublisher.publishEvent(OrderCreatedForCustomerEvent.fromOrder(order));
+  }
+
+  @Transactional
+  public void processStockReserveFailed(Long orderId, String reason) {
+    log.info("주문 [{}] 취소 처리 시작. 사유: 재고 예약 실패 ({})", orderId, reason);
+
+    Order order = getOrderById(orderId);
+    order.cancel(reason);
+    eventPublisher.publishEvent(OrderCreateFailedForCustomerEvent.fromOrder(order));
+
+    log.info("주문 [{}] 취소 처리 완료.", orderId);
   }
 
   private Order getOrderWithStoreByMerchantId(String merchantUid) {

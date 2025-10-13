@@ -1,7 +1,7 @@
-package com.deliveranything.domain.order.subscriber;
+package com.deliveranything.domain.order.subscriber.delivery;
 
+import com.deliveranything.domain.delivery.event.dto.OrderAssignedEvent;
 import com.deliveranything.domain.order.service.OrderService;
-import com.deliveranything.domain.payment.event.PaymentSuccessEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PaymentSuccessEventSubscriber implements MessageListener {
+public class OrderAssignedEventSubscriber implements MessageListener {
 
   private final RedisMessageListenerContainer container;
   private final ObjectMapper objectMapper;
@@ -24,16 +24,17 @@ public class PaymentSuccessEventSubscriber implements MessageListener {
 
   @PostConstruct
   public void registerListener() {
-    container.addMessageListener(this, new ChannelTopic("payment-completed-event"));
+    container.addMessageListener(this, new ChannelTopic("order-assigned-event"));
   }
 
   @Override
   public void onMessage(@NonNull Message message, byte[] pattern) {
     try {
-      orderService.processPaymentCompletion(objectMapper.readValue(new String(message.getBody()),
-          PaymentSuccessEvent.class).merchantUid());
+      OrderAssignedEvent event = objectMapper.readValue(message.getBody(),
+          OrderAssignedEvent.class);
+      orderService.processOrderTransmitted(event.orderId());
     } catch (Exception e) {
-      log.error("Failed to process payment completed event from Redis", e);
+      log.error("Failed to process order assigned event from Redis", e);
     }
   }
 }

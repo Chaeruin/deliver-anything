@@ -65,24 +65,24 @@ public class StoreOrderController {
   @PatchMapping("/{orderId}/accept")
   @Operation(summary = "주문 수락", description = "판매자가 상점의 주문을 수락한 경우")
   @PreAuthorize("@profileSecurity.isSeller(#securityUser) and @storeSecurity.isOwner(#storeId,#securityUser)")
-  public ResponseEntity<ApiResponse<OrderResponse>> acceptOrder(
+  public ResponseEntity<ApiResponse<String>> acceptOrder(
       @AuthenticationPrincipal SecurityUser securityUser,
       @PathVariable Long storeId,
       @PathVariable Long orderId
   ) {
-    return ResponseEntity.ok().body(ApiResponse.success("주문 상태 변경 성공",
-        storeOrderService.acceptOrder(orderId)));
+    storeOrderService.acceptOrder(orderId);
+    return ResponseEntity.ok().body(ApiResponse.success("주문 수락 요청 처리중입니다."));
   }
 
   @PatchMapping("/{orderId}/reject")
   @Operation(summary = "주문 거절", description = "판매자가 상점의 주문을 거절한 경우")
   @PreAuthorize("@profileSecurity.isSeller(#securityUser) and @storeSecurity.isOwner(#storeId,#securityUser)")
-  public ResponseEntity<ApiResponse<OrderResponse>> rejectOrder(
+  public ResponseEntity<ApiResponse<String>> rejectOrder(
       @AuthenticationPrincipal SecurityUser securityUser,
       @PathVariable Long storeId,
       @PathVariable Long orderId
   ) {
-    return ResponseEntity.ok().body(ApiResponse.success("주문 상태 변경 성공",
-        storeOrderService.rejectOrder(orderId)));
+    storeOrderService.rejectOrder(orderId);
+    return ResponseEntity.ok().body(ApiResponse.success("주문 거절 요청 처리중입니다."));
   }
 }

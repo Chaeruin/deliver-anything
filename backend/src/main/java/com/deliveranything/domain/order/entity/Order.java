@@ -77,6 +77,8 @@ public class Order extends BaseEntity {
   @Column(nullable = false)
   private Long deliveryPrice;
 
+  private String cancellationReason;
+
   @Builder
   public Order(CustomerProfile customer, Store store, String address, Point destination,
       String riderNote, String storeNote, Long totalPrice, Long storePrice, Long deliveryPrice) {
@@ -116,5 +118,16 @@ public class Order extends BaseEntity {
     if (this.status != OrderStatus.PENDING) {
       throw new CustomException(ErrorCode.ORDER_CANCEL_UNAVAILABLE);
     }
+  }
+
+  public void cancel(String reason) {
+    updateStatus(OrderStatus.CANCELED);
+    this.cancellationReason = reason;
+  }
+
+  public void cancellationRequest(String reason) {
+    isCancelable();
+    updateStatus(OrderStatus.CANCELLATION_REQUESTED);
+    this.cancellationReason = reason;
   }
 }

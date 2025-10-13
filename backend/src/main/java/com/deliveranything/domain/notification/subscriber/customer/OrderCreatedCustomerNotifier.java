@@ -3,7 +3,7 @@ package com.deliveranything.domain.notification.subscriber.customer;
 import com.deliveranything.domain.notification.enums.NotificationMessage;
 import com.deliveranything.domain.notification.enums.NotificationType;
 import com.deliveranything.domain.notification.service.NotificationService;
-import com.deliveranything.domain.order.event.sse.customer.OrderPaymentFailedForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderCreatedForCustomerEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderPaymentFailedCustomerNotifier implements MessageListener {
+public class OrderCreatedCustomerNotifier implements MessageListener {
 
   private final RedisMessageListenerContainer container;
   private final ObjectMapper objectMapper;
@@ -26,22 +26,22 @@ public class OrderPaymentFailedCustomerNotifier implements MessageListener {
 
   @PostConstruct
   public void registerListener() {
-    container.addMessageListener(this, new ChannelTopic("order-payment-failed-for-customer-event"));
+    container.addMessageListener(this, new ChannelTopic("order-created-for-customer-event"));
   }
 
   @Override
   public void onMessage(@NonNull Message message, byte[] pattern) {
     try {
-      OrderPaymentFailedForCustomerEvent event = objectMapper.readValue(message.getBody(),
-          OrderPaymentFailedForCustomerEvent.class);
+      OrderCreatedForCustomerEvent event = objectMapper.readValue(message.getBody(),
+          OrderCreatedForCustomerEvent.class);
       notificationService.sendNotification(
           event.customerId(),
-          NotificationType.ORDER_PAYMENT_FAILED_CUSTOMER,
-          NotificationMessage.ORDER_PAYMENT_FAILED_CUSTOMER.getMessage(),
+          NotificationType.ORDER_CREATED_CUSTOMER,
+          NotificationMessage.ORDER_CREATED_CUSTOMER.getMessage(),
           objectMapper.writeValueAsString(event)
       );
     } catch (Exception e) {
-      log.error("Failed to process order payment failed for customer event from Redis", e);
+      log.error("Failed to process order created for customer event from Redis", e);
     }
   }
 }

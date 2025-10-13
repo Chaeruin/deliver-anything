@@ -1,8 +1,6 @@
 package com.deliveranything.domain.order.service;
 
-import com.deliveranything.domain.order.dto.OrderResponse;
 import com.deliveranything.domain.order.entity.Order;
-import com.deliveranything.domain.order.enums.OrderStatus;
 import com.deliveranything.domain.order.enums.Publisher;
 import com.deliveranything.domain.order.event.OrderCancelEvent;
 import com.deliveranything.domain.order.event.OrderPaymentRequestedEvent;
@@ -22,35 +20,29 @@ public class PaymentOrderService {
   private final OrderRepository orderRepository;
 
   @Transactional
-  public OrderResponse payOrder(String merchantUid, String paymentKey) {
+  public void payOrder(String merchantUid, String paymentKey) {
     Order order = getOrderByMerchantId(merchantUid);
     order.isPayable();
 
-    eventPublisher.publishEvent(new OrderPaymentRequestedEvent(order.getId(), paymentKey,
-        merchantUid, order.getTotalPrice()));
-
-    return OrderResponse.from(order);
+    eventPublisher.publishEvent(
+        OrderPaymentRequestedEvent.fromOrderAndPaymentKey(order, paymentKey));
   }
 
   @Transactional
-  public OrderResponse cancelOrder(Long orderId, String cancelReason) {
-    Order order = getOrderWithStoreById(orderId);
-    order.isCancelable();
-
-    order.updateStatus(OrderStatus.CANCELLATION_REQUESTED);
+  public void cancelOrder(Long orderId, String cancelReason) {
+    Order order = getOrderById(orderId);
+    order.cancellationRequest(cancelReason);
 
     eventPublisher.publishEvent(OrderCancelEvent.from(order, cancelReason, Publisher.CUSTOMER));
-
-    return OrderResponse.from(order);
   }
 
   private Order getOrderByMerchantId(String merchantId) {
-    return orderRepository.findOrderWithStoreByMerchantId(merchantId)
+    return orderRepository.findByMerchantId(merchantId)
         .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
   }
 
-  private Order getOrderWithStoreById(Long orderId) {
-    return orderRepository.findOrderWithStoreById(orderId)
+  private Order getOrderById(Long orderId) {
+    return orderRepository.findById(orderId)
         .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
   }
 }

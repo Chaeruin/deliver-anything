@@ -1,7 +1,5 @@
 package com.deliveranything.domain.order.controller;
 
-import static org.springframework.http.HttpStatus.CREATED;
-
 import com.deliveranything.domain.order.dto.OrderCancelRequest;
 import com.deliveranything.domain.order.dto.OrderCreateRequest;
 import com.deliveranything.domain.order.dto.OrderPayRequest;
@@ -39,12 +37,13 @@ public class CustomerOrderController {
   @PostMapping
   @Operation(summary = "주문 생성", description = "소비자가 상점에 주문을 요청한 경우")
   @PreAuthorize("@profileSecurity.isCustomer(#securityUser)")
-  public ResponseEntity<ApiResponse<OrderResponse>> create(
+  public ResponseEntity<ApiResponse<String>> create(
       @AuthenticationPrincipal SecurityUser securityUser,
       @Valid @RequestBody OrderCreateRequest orderCreateRequest
   ) {
-    return ResponseEntity.status(CREATED).body(ApiResponse.success(customerOrderService.createOrder(
-        securityUser.getCurrentActiveProfile().getId(), orderCreateRequest)));
+    customerOrderService.createOrder(securityUser.getCurrentActiveProfile().getId(),
+        orderCreateRequest);
+    return ResponseEntity.ok().body(ApiResponse.success("주문이 접수되어 처리중입니다."));
   }
 
   @GetMapping
@@ -96,25 +95,24 @@ public class CustomerOrderController {
   @PostMapping("/{merchantUid}/pay")
   @Operation(summary = "주문 결제", description = "소비자가 생성한 주문의 결제 시도")
   @PreAuthorize("@profileSecurity.isCustomer(#securityUser)")
-  public ResponseEntity<ApiResponse<OrderResponse>> pay(
+  public ResponseEntity<ApiResponse<String>> pay(
       @AuthenticationPrincipal SecurityUser securityUser,
       @PathVariable String merchantUid,
       @Valid @RequestBody OrderPayRequest orderPayRequest
   ) {
-
-    return ResponseEntity.ok().body(ApiResponse.success("소비자 결제 승인 성공",
-        paymentOrderService.payOrder(merchantUid, orderPayRequest.paymentKey())));
+    paymentOrderService.payOrder(merchantUid, orderPayRequest.paymentKey());
+    return ResponseEntity.ok().body(ApiResponse.success("결제 요청이 접수되어 처리중입니다."));
   }
 
   @PostMapping("/{orderId}/cancel")
   @Operation(summary = "주문 취소", description = "소비자가 상점에서 주문 수락 전인 주문을 취소하는 경우")
   @PreAuthorize("@profileSecurity.isCustomer(#securityUser)")
-  public ResponseEntity<ApiResponse<OrderResponse>> cancel(
+  public ResponseEntity<ApiResponse<String>> cancel(
       @AuthenticationPrincipal SecurityUser securityUser,
       @PathVariable Long orderId,
       @RequestBody OrderCancelRequest orderCancelRequest
   ) {
-    return ResponseEntity.ok().body(ApiResponse.success("소비자 주문 취소 성공",
-        paymentOrderService.cancelOrder(orderId, orderCancelRequest.cancelReason())));
+    paymentOrderService.cancelOrder(orderId, orderCancelRequest.cancelReason());
+    return ResponseEntity.ok().body(ApiResponse.success("주문 취소 요청이 접수되어 처리중입니다."));
   }
 }

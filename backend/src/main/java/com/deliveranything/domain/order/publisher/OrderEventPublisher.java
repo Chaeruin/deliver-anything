@@ -12,6 +12,8 @@ import com.deliveranything.domain.order.event.OrderPaymentSucceededEvent;
 import com.deliveranything.domain.order.event.OrderRejectedEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderCancelFailedForCustomerEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderCanceledForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderCreateFailedForCustomerEvent;
+import com.deliveranything.domain.order.event.sse.customer.OrderCreatedForCustomerEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderPaidForCustomerEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderPaymentFailedForCustomerEvent;
 import com.deliveranything.domain.order.event.sse.customer.OrderPreparingForCustomerEvent;
@@ -136,5 +138,15 @@ public class OrderEventPublisher {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleOrderPreparedForSellerEvent(OrderPreparingForSellerEvent event) {
     redisTemplate.convertAndSend("order-preparing-for-seller-event", event);
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handleOrderCreatedForCustomerEvent(OrderCreatedForCustomerEvent event) {
+    redisTemplate.convertAndSend("order-created-for-customer-event", event);
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handleOrderCreateFailedForCustomerEvent(OrderCreateFailedForCustomerEvent event) {
+    redisTemplate.convertAndSend("order-created-failed-for-customer-event", event);
   }
 }

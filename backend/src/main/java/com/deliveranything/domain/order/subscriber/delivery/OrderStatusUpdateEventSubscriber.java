@@ -1,7 +1,8 @@
-package com.deliveranything.domain.order.subscriber;
+package com.deliveranything.domain.order.subscriber.delivery;
 
+import com.deliveranything.domain.delivery.enums.DeliveryStatus;
+import com.deliveranything.domain.delivery.event.dto.OrderStatusUpdateEvent;
 import com.deliveranything.domain.order.service.OrderService;
-import com.deliveranything.domain.payment.event.PaymentCancelSuccessEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PaymentCancelSuccessEventSubscriber implements MessageListener {
+public class OrderStatusUpdateEventSubscriber implements MessageListener {
 
   private final RedisMessageListenerContainer container;
   private final ObjectMapper objectMapper;
@@ -24,17 +25,19 @@ public class PaymentCancelSuccessEventSubscriber implements MessageListener {
 
   @PostConstruct
   public void registerListener() {
-    container.addMessageListener(this, new ChannelTopic("payment-cancel-success-event"));
+    container.addMessageListener(this, new ChannelTopic("order-delivery-status"));
   }
 
   @Override
   public void onMessage(@NonNull Message message, byte[] pattern) {
     try {
-      PaymentCancelSuccessEvent event = objectMapper.readValue(message.getBody(),
-          PaymentCancelSuccessEvent.class);
-      orderService.processPaymentCancelSuccess(event.merchantUid(), event.publisher());
+      OrderStatusUpdateEvent event = objectMapper.readValue(message.getBody(),
+          OrderStatusUpdateEvent.class);
+      if (event.status() == DeliveryStatus.RIDER_ASSIGNED) {
+        orderService.processDeliveryRiderAssigned(Long.parseLong(event.orderId()));
+      }
     } catch (Exception e) {
-      log.error("Failed to process payment cancel success event from Redis", e);
+      log.error("Failed to process order delivery status event from Redis", e);
     }
   }
 }

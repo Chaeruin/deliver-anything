@@ -1,7 +1,7 @@
-package com.deliveranything.domain.order.subscriber;
+package com.deliveranything.domain.order.subscriber.delivery;
 
 import com.deliveranything.domain.delivery.enums.DeliveryStatus;
-import com.deliveranything.domain.delivery.event.dto.OrderStatusUpdateEvent;
+import com.deliveranything.domain.delivery.event.dto.DeliveryStatusEvent;
 import com.deliveranything.domain.order.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderStatusUpdateEventSubscriber implements MessageListener {
+public class DeliveryStatusEventSubscriber implements MessageListener {
 
   private final RedisMessageListenerContainer container;
   private final ObjectMapper objectMapper;
@@ -25,19 +25,22 @@ public class OrderStatusUpdateEventSubscriber implements MessageListener {
 
   @PostConstruct
   public void registerListener() {
-    container.addMessageListener(this, new ChannelTopic("order-delivery-status"));
+    container.addMessageListener(this, new ChannelTopic("delivery-status-events"));
   }
 
   @Override
   public void onMessage(@NonNull Message message, byte[] pattern) {
     try {
-      OrderStatusUpdateEvent event = objectMapper.readValue(message.getBody(),
-          OrderStatusUpdateEvent.class);
-      if (event.status() == DeliveryStatus.RIDER_ASSIGNED) {
-        orderService.processDeliveryRiderAssigned(Long.parseLong(event.orderId()));
+      DeliveryStatusEvent event = objectMapper.readValue(message.getBody(),
+          DeliveryStatusEvent.class);
+      if (event.status() == DeliveryStatus.PICKED_UP) {
+        orderService.processDeliveryPickedUp(event.orderId());
+      } else if (event.status() == DeliveryStatus.COMPLETED) {
+        orderService.processDeliveryCompleted(event.orderId(), event.riderProfileId(),
+            event.sellerProfileId());
       }
     } catch (Exception e) {
-      log.error("Failed to process order delivery status event from Redis", e);
+      log.error("Failed to process delivery status event from Redis", e);
     }
   }
 }

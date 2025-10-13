@@ -20,7 +20,7 @@ public record OrderPaidForSellerEvent(
         order.getStore().getSellerProfileId(),
         order.getAddress(),
         order.getStoreNote(),
-        order.getTotalPrice().longValue()
+        order.getTotalPrice()
     );
   }
 }

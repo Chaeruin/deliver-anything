@@ -15,7 +15,7 @@ public enum OrderStatus {
 
   public boolean canTransitTo(OrderStatus next) {
     return switch (this) {
-      case CREATED -> next == PENDING || next == PAYMENT_FAILED;
+      case CREATED -> next == PENDING || next == PAYMENT_FAILED || next == CANCELED;
       case PENDING -> next == PREPARING || next == REJECTED || next == CANCELED
           || next == CANCELLATION_REQUESTED;
       case PREPARING -> next == RIDER_ASSIGNED;

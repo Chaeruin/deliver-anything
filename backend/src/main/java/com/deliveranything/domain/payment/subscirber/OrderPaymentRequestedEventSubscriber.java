@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderPaymentRequestedEventSubscriber implements MessageListener {
 
-  private final ApplicationEventPublisher eventPublisher;
   private final ObjectMapper objectMapper;
   private final PaymentService paymentService;
   private final RedisMessageListenerContainer container;
@@ -36,6 +35,7 @@ public class OrderPaymentRequestedEventSubscriber implements MessageListener {
     try {
       event = objectMapper.readValue(new String(message.getBody()),
           OrderPaymentRequestedEvent.class);
+      paymentService.createPayment(event.merchantUid(),event.amount());
       paymentService.confirmPayment(event.paymentKey(), event.merchantUid(), event.amount());
     } catch (CustomException e) {
       if (event != null) {

@@ -2,16 +2,19 @@ package com.deliveranything.domain.product.stock.service;
 
 import com.deliveranything.domain.order.event.dto.OrderItemInfo;
 import com.deliveranything.domain.product.stock.entity.Stock;
-import com.deliveranything.domain.product.stock.event.*;
+import com.deliveranything.domain.product.stock.event.StockCommittedEvent;
+import com.deliveranything.domain.product.stock.event.StockReleasedEvent;
+import com.deliveranything.domain.product.stock.event.StockReplenishedEvent;
+import com.deliveranything.domain.product.stock.event.StockReserveFailedEvent;
+import com.deliveranything.domain.product.stock.event.StockReservedEvent;
 import jakarta.persistence.OptimisticLockException;
+import java.util.List;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.function.Supplier;
 
 @Slf4j
 @Service
@@ -32,7 +35,9 @@ public class StockFacadeService {
       } catch (OptimisticLockException e) {
         retries++;
         log.warn("Optimistic lock conflict, retry {}/{}", retries, MAX_RETRIES);
-        if (retries >= MAX_RETRIES) throw e;
+        if (retries >= MAX_RETRIES) {
+          throw e;
+        }
       }
     }
   }
@@ -48,10 +53,10 @@ public class StockFacadeService {
         }
         return null;
       });
-      eventPublisher.publishEvent(new StockReservedEvent(orderId, storeId, items));
+      eventPublisher.publishEvent(new StockReservedEvent(orderId));
     } catch (Exception e) {
       log.error("Failed to reserve stock for order, orderId={}, storeId={}", orderId, storeId, e);
-      eventPublisher.publishEvent(new StockReservedFailedEvent(orderId, storeId, items, e.getMessage()));
+      eventPublisher.publishEvent(new StockReserveFailedEvent(orderId, e.getMessage()));
       throw e;
     }
   }
@@ -65,7 +70,7 @@ public class StockFacadeService {
       }
       return null;
     });
-    eventPublisher.publishEvent(new StockReplenishedEvent(orderId, storeId, items));
+    eventPublisher.publishEvent(new StockReplenishedEvent(orderId));
   }
 
   @Transactional
@@ -78,7 +83,7 @@ public class StockFacadeService {
       }
       return null;
     });
-    eventPublisher.publishEvent(new StockCommittedEvent(orderId, storeId, items));
+    eventPublisher.publishEvent(new StockCommittedEvent(orderId));
   }
 
   @Transactional
@@ -90,6 +95,6 @@ public class StockFacadeService {
       }
       return null;
     });
-    eventPublisher.publishEvent(new StockReleasedEvent(orderId, storeId, items));
+    eventPublisher.publishEvent(new StockReleasedEvent(orderId));
   }
 }

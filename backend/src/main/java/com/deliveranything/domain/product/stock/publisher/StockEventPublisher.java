@@ -4,7 +4,7 @@ import com.deliveranything.domain.product.stock.event.StockCommittedEvent;
 import com.deliveranything.domain.product.stock.event.StockReleasedEvent;
 import com.deliveranything.domain.product.stock.event.StockReplenishedEvent;
 import com.deliveranything.domain.product.stock.event.StockReservedEvent;
-import com.deliveranything.domain.product.stock.event.StockReservedFailedEvent;
+import com.deliveranything.domain.product.stock.event.StockReserveFailedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -23,8 +23,8 @@ public class StockEventPublisher {
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  public void handleStockReservedFailedEvent(StockReservedFailedEvent event) {
-    redisTemplate.convertAndSend("stock-reserved-failed-event", event);
+  public void handleStockReservedFailedEvent(StockReserveFailedEvent event) {
+    redisTemplate.convertAndSend("stock-reserve-failed-event", event);
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
