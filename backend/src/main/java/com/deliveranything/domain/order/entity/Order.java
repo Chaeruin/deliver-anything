@@ -39,7 +39,7 @@ public class Order extends BaseEntity {
   private Store store;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "cusotomer_id", nullable = false)
+  @JoinColumn(name = "customer_id", nullable = false)
   private CustomerProfile customer;
 
   @OneToOne(fetch = FetchType.LAZY)
