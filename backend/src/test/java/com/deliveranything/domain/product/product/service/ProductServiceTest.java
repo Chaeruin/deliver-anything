@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.SliceImpl;
 
@@ -46,15 +47,17 @@ class ProductServiceTest {
   @Mock
   private KeywordGenerationService keywordGenerationService;
 
+  @Mock
+  private ApplicationEventPublisher eventPublisher; // Add mock for event publisher
+
   @InjectMocks
   private ProductService productService;
 
-  // Helper method to create a Store object with ID for testing
   private Store createTestStore(Long id, Long sellerProfileId, String name) {
     Store store = Store.builder()
         .sellerProfileId(sellerProfileId)
         .name(name)
-        .storeCategory(null) // Not relevant for product tests
+        .storeCategory(null)
         .roadAddr("Test Road")
         .imageUrl("test.jpg")
         .location(null)
@@ -69,7 +72,6 @@ class ProductServiceTest {
     return store;
   }
 
-  // Helper method to create a Product object with ID for testing
   private Product createTestProduct(Long id, Store store, String name, String description, Integer price, String imageUrl, Integer initialStock) {
     Product product = Product.builder()
         .store(store)
@@ -100,7 +102,7 @@ class ProductServiceTest {
     Product savedProductMock = mock(Product.class);
     when(savedProductMock.getId()).thenReturn(1L);
     when(savedProductMock.getName()).thenReturn(request.name());
-    when(savedProductMock.getStore()).thenReturn(store); // Mock the store for ProductResponse.from
+    when(savedProductMock.getStore()).thenReturn(store);
 
     when(storeService.getStoreById(storeId)).thenReturn(store);
     when(productRepository.save(any(Product.class))).thenReturn(savedProductMock);
@@ -124,18 +126,18 @@ class ProductServiceTest {
     Long storeId = 1L;
     Long productId = 1L;
     Store store = createTestStore(storeId, 1L, "Test Store");
-    Product product = mock(Product.class); // Make product a mock
-    // when(product.getId()).thenReturn(productId); // Not directly used by deleteProduct or validateStore
+    Product product = mock(Product.class);
 
     when(productRepository.getById(productId)).thenReturn(product);
-    doNothing().when(productRepository).delete(any(Product.class));
+    when(product.getStore()).thenReturn(store);
+    doNothing().when(productRepository).delete(product);
 
     // when
     productService.deleteProduct(storeId, productId);
 
     // then
     verify(productRepository).getById(productId);
-    verify(product).validateStore(storeId); // Verify interaction with the mock product
+    verify(product).validateStore(storeId);
     verify(productRepository).delete(product);
   }
 
@@ -147,8 +149,7 @@ class ProductServiceTest {
     Long productId = 1L;
     Long wrongStoreId = 2L;
     Store store = createTestStore(storeId, 1L, "Test Store");
-    Product product = mock(Product.class); // Make product a mock
-    // when(product.getId()).thenReturn(productId); // Not directly used by deleteProduct or validateStore
+    Product product = mock(Product.class);
 
     when(productRepository.getById(productId)).thenReturn(product);
     doThrow(new CustomException(ErrorCode.PRODUCT_STORE_MISMATCH))
@@ -160,7 +161,7 @@ class ProductServiceTest {
     assertThat(exception.getCode()).isEqualTo(ErrorCode.PRODUCT_STORE_MISMATCH.getCode());
     verify(productRepository).getById(productId);
     verify(productRepository, never()).delete(any(Product.class));
-    verify(product).validateStore(wrongStoreId); // Verify interaction with the mock product
+    verify(product).validateStore(wrongStoreId);
   }
 
   @Test
