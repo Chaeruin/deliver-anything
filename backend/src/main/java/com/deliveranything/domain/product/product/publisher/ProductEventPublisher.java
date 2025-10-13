@@ -15,6 +15,6 @@ public class ProductEventPublisher {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleProductKeywordsChangedEvent(ProductKeywordsChangedEvent event) {
-    redisTemplate.convertAndSend("product-events", event);
+    redisTemplate.convertAndSend("product-keywords-events", event);
   }
 }

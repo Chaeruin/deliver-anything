@@ -29,7 +29,7 @@ public class Stock extends BaseEntity {
   @Version
   private Integer version;
 
-  @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+  @Column(name = "quantity", nullable = false, columnDefinition = "INT DEFAULT 0")
   private Integer totalQuantity;
 
   @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
