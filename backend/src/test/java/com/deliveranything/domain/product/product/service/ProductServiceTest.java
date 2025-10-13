@@ -18,6 +18,7 @@ import com.deliveranything.domain.product.product.dto.ProductSearchRequest;
 import com.deliveranything.domain.product.product.dto.ProductUpdateRequest;
 import com.deliveranything.domain.product.product.entity.Product;
 import com.deliveranything.domain.product.product.repository.ProductRepository;
+import com.deliveranything.domain.product.stock.entity.Stock;
 import com.deliveranything.domain.store.store.entity.Store;
 import com.deliveranything.domain.store.store.service.StoreService;
 import com.deliveranything.global.exception.CustomException;
@@ -100,9 +101,12 @@ class ProductServiceTest {
     Store store = createTestStore(storeId, 1L, "Test Store");
 
     Product savedProductMock = mock(Product.class);
+    Stock stockMock = mock(Stock.class);
     when(savedProductMock.getId()).thenReturn(1L);
     when(savedProductMock.getName()).thenReturn(request.name());
     when(savedProductMock.getStore()).thenReturn(store);
+    when(savedProductMock.getStock()).thenReturn(stockMock);
+    when(stockMock.getAvailableQuantity()).thenReturn(request.initialStock());
 
     when(storeService.getStoreById(storeId)).thenReturn(store);
     when(productRepository.save(any(Product.class))).thenReturn(savedProductMock);

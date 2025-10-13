@@ -164,7 +164,7 @@ public class DeliveryService {
         .customerDetails(
             DeliveringCustomerDetailsDto.builder()
                 .customerNickname(customerProfile.getNickname())
-                .customerAddress(getCustomerDefaultAddress(customerProfile.getDefaultAddressId()))
+                .customerAddress(getCustomerDefaultAddress(customerProfile.getId()))
                 .customerPhoneNumber(customerProfile.getCustomerPhoneNumber())
                 .riderNote(currentOrder.riderNote())
                 .build()
@@ -279,7 +279,7 @@ public class DeliveryService {
 
     // 다음 페이지 토큰 생성
     if (hasNext && !deliveredDetailsList.isEmpty()) {
-      DeliveredDetailsDto last = deliveredDetailsList.get(deliveredDetailsList.size() - 1);
+      DeliveredDetailsDto last = deliveredDetailsList.getLast();
       nextPageToken = CursorUtil.encode(last.completedAt(), last.orderId());
     }
 
@@ -336,7 +336,7 @@ public class DeliveryService {
   }
 
   // 고객 기본 주소 조회
-  private String getCustomerDefaultAddress(Long defaultAddressId) {
-    return customerProfileService.getCurrentAddress(defaultAddressId).getAddress();
+  private String getCustomerDefaultAddress(Long customerProfileId) {
+    return customerProfileService.getCurrentAddress(customerProfileId).getAddress();
   }
 }

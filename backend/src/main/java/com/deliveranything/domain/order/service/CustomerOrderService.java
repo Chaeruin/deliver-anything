@@ -40,7 +40,7 @@ public class CustomerOrderService {
   @Transactional
   public void createOrder(Long customerId, OrderCreateRequest orderCreateRequest) {
     Order order = Order.builder()
-        .customer(customerProfileService.getProfile(customerId))
+        .customer(customerProfileService.getProfileByProfileId(customerId))
         .store(storeService.getStoreById(orderCreateRequest.storeId()))
         .address(orderCreateRequest.address())
         .destination(PointUtil.createPoint(orderCreateRequest.lat(), orderCreateRequest.lng()))
