@@ -8,8 +8,9 @@ public record ProductDetailResponse(
     String name,
     String description,
     Integer price,
-    String imageUrl,
-    Integer stockQuantity
+    Integer stockQuantity,
+    Integer availableQuantity,
+    String imageUrl
 ) {
 
   public static ProductDetailResponse from(Product product) {
@@ -19,8 +20,9 @@ public record ProductDetailResponse(
         product.getName(),
         product.getDescription(),
         product.getPrice(),
-        product.getImageUrl(),
-        product.getStock().getTotalQuantity()
+        product.getStock().getTotalQuantity(),
+        product.getStock().getAvailableQuantity(),
+        product.getImageUrl()
     );
   }
 }

@@ -7,6 +7,7 @@ public record ProductResponse(
     Long storeId,
     String name,
     Integer price,
+    Integer availableQuantity,
     String imageUrl
 ) {
 
@@ -16,6 +17,7 @@ public record ProductResponse(
         product.getStore().getId(),
         product.getName(),
         product.getPrice(),
+        product.getStock().getAvailableQuantity(),
         product.getImageUrl()
     );
   }

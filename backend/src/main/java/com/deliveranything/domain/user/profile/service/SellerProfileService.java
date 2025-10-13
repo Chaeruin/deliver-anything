@@ -7,6 +7,8 @@ import com.deliveranything.domain.user.profile.repository.ProfileRepository;
 import com.deliveranything.domain.user.profile.repository.SellerProfileRepository;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.domain.user.user.repository.UserRepository;
+import com.deliveranything.global.exception.CustomException;
+import com.deliveranything.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,10 +47,10 @@ public class SellerProfileService {
       return getProfile(userId);
     }
 
-    // 사업자 등록번호 중복 체크
+// 사업자 등록번호 중복 체크
     if (sellerProfileRepository.existsByBusinessCertificateNumber(businessCertificateNumber)) {
       log.warn("이미 존재하는 사업자 등록번호입니다: businessCertificateNumber={}", businessCertificateNumber);
-      return null;
+      throw new CustomException(ErrorCode.BUSINESS_CERTIFICATE_DUPLICATE);  // 에러처리
     }
 
     // 1단계: Profile 생성 (전역 고유 ID)
