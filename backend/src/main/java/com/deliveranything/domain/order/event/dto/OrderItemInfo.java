@@ -5,8 +5,8 @@ import com.deliveranything.domain.order.entity.OrderItem;
 public record OrderItemInfo(
     Long productId,
     String productName,
-    Long quantity,
-    Long price
+    Integer quantity,
+    Integer price
 ) {
 
   public static OrderItemInfo fromOrderItem(OrderItem orderItem) {

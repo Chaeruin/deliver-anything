@@ -33,13 +33,13 @@ public class OrderItem {
   private Product product;
 
   @Column(nullable = false)
-  private Long price;
+  private Integer price;
 
   @Column(nullable = false)
-  private Long quantity;
+  private Integer quantity;
 
   @Builder
-  public OrderItem(Product product, Long price, Long quantity) {
+  public OrderItem(Product product, Integer price, Integer quantity) {
     this.product = product;
     this.price = price;
     this.quantity = quantity;
