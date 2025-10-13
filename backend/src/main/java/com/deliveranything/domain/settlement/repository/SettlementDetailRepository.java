@@ -31,6 +31,7 @@ public interface SettlementDetailRepository extends JpaRepository<SettlementDeta
   List<SettlementDetail> findAllUnsettledDetails(
       Long targetId,
       SettlementStatus status,
-      LocalDateTime start,
-      LocalDateTime end);
+      LocalDateTime startDateTime,
+      LocalDateTime endDateTime
+  );
 }
