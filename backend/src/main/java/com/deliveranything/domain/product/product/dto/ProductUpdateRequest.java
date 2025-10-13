@@ -15,6 +15,10 @@ public record ProductUpdateRequest(
     @Max(value = Integer.MAX_VALUE, message = "가격은 " + Integer.MAX_VALUE + "원을 초과할 수 없습니다.")
     Integer price,
 
+    @Min(value = 0, message = "재고 수량은 0 이상 2,147,483,647 이하만 가능합니다.")
+    @Max(value = Integer.MAX_VALUE, message = "재고 수량은 0 이상 2,147,483,647 이하만 가능합니다.")
+    Integer newStockQuantity,
+
     @Size(min = 1, max = 256, message = "이미지 URL은 공백일 수 없으며, 256자를 초과할 수 없습니다.")
     String imageUrl
 ) {

@@ -202,12 +202,12 @@ public class DeliveryService {
     Long lastOrderId = null;
 
     if (nextPageToken != null) {
-      String[] decoded = (String[]) CursorUtil.decode(nextPageToken);
+      Object[] decoded = CursorUtil.decode(nextPageToken);
 
       if (decoded != null && decoded.length == 2) {
         try {
-          lastCompletedAt = LocalDateTime.parse(decoded[0]);
-          lastOrderId = Long.parseLong(decoded[1]);
+          lastCompletedAt = LocalDateTime.parse(decoded[0].toString());
+          lastOrderId = Long.parseLong(decoded[1].toString());
         } catch (Exception e) {
           lastCompletedAt = null;
           lastOrderId = null;

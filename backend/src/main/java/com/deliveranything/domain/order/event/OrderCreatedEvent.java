@@ -6,6 +6,7 @@ import java.util.List;
 
 public record OrderCreatedEvent(
     Long orderId,
+    Long storeId,
     String merchantUid,
     Long totalPrice,
     List<OrderItemInfo> orderItems
@@ -14,6 +15,7 @@ public record OrderCreatedEvent(
   public static OrderCreatedEvent from(Order order) {
     return new OrderCreatedEvent(
         order.getId(),
+        order.getStore().getId(),
         order.getMerchantId(),
         order.getTotalPrice(),
         order.getOrderItems().stream().map(OrderItemInfo::fromOrderItem).toList()

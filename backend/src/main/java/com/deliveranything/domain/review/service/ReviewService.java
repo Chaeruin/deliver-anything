@@ -178,7 +178,14 @@ public class ReviewService {
     ProfileType profileType = profile.getType();
     Long profileId = profile.getId();
 
-    String[] decodedCursor = (String[]) CursorUtil.decode(cursor);
+    Object[] decoded = CursorUtil.decode(cursor);
+
+    String[] decodedCursor = null;
+    if (decoded != null) {
+      decodedCursor = Arrays.stream(decoded)
+          .map(Object::toString)
+          .toArray(String[]::new);
+    }
 
     //실제 조회
     List<ReviewResponse> reviewList = getReviewsByProfile(profileType, profileId, sort,
@@ -226,7 +233,14 @@ public class ReviewService {
     log.info("상점 리뷰 리스트 조회 요청 - storeId: {}, sort: {}, cursor: {}, size: {}", storeId, sort, cursor,
         size);
 
-    String[] decodedCursor = (String[]) CursorUtil.decode(cursor);
+    Object[] decoded = CursorUtil.decode(cursor);
+
+    String[] decodedCursor = null;
+    if (decoded != null) {
+      decodedCursor = Arrays.stream(decoded)
+          .map(Object::toString)
+          .toArray(String[]::new);
+    }
 
     //실제 조회
     List<Review> reviews = reviewRepository.getStoreReviews(storeId, sort,

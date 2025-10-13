@@ -37,12 +37,12 @@ public class StoreOrderService {
   ) {
     LocalDateTime lastCreatedAt = null;
     Long lastOrderId = null;
-    String[] decodedParts = (String[]) CursorUtil.decode(nextPageToken);
+    Object[] decodedParts = CursorUtil.decode(nextPageToken);
 
     if (decodedParts != null && decodedParts.length == 2) {
       try {
-        lastCreatedAt = LocalDateTime.parse(decodedParts[0]);
-        lastOrderId = Long.parseLong(decodedParts[1]);
+        lastCreatedAt = LocalDateTime.parse(decodedParts[0].toString());
+        lastOrderId = Long.parseLong(decodedParts[1].toString());
       } catch (NumberFormatException e) {
         lastCreatedAt = null;
         lastOrderId = null;

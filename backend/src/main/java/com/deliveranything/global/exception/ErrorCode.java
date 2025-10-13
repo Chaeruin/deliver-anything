@@ -74,6 +74,7 @@ public enum ErrorCode {
   PRODUCT_STORE_MISMATCH(HttpStatus.BAD_REQUEST, "PRODUCT-400", "해당 상품은 지정된 상점에 속하지 않습니다."),
   STOCK_CHANGE_INVALID(HttpStatus.BAD_REQUEST, "STOCK-400", "재고 변경 수량이 유효하지 않습니다."),
   STOCK_CHANGE_CONFLICT(HttpStatus.CONFLICT, "STOCK-409", "재고 변경 충돌이 발생했습니다. 다시 시도해주세요."),
+  STORE_CLOSED(HttpStatus.BAD_REQUEST, "STORE-400", "상점이 현재 닫혀 있어 주문을 처리할 수 없습니다."),
 
   // 정산 관련 오류
   SETTLEMENT_BATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT-BATCH-404", "일별 정산 정보를 찾을 수 없습니다."),

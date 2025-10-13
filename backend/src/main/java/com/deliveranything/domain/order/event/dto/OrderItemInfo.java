@@ -11,7 +11,7 @@ public record OrderItemInfo(
 
   public static OrderItemInfo fromOrderItem(OrderItem orderItem) {
     return new OrderItemInfo(
-        orderItem.getId(),
+        orderItem.getProduct().getId(),
         orderItem.getProduct().getName(),
         orderItem.getQuantity(),
         orderItem.getPrice()

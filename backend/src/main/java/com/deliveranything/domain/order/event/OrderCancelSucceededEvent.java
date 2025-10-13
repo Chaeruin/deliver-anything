@@ -6,12 +6,14 @@ import java.util.List;
 
 public record OrderCancelSucceededEvent(
     Long orderId,
+    Long storeId,
     List<OrderItemInfo> orderItems
 ) {
 
   public static OrderCancelSucceededEvent fromOrder(Order order) {
     return new OrderCancelSucceededEvent(
         order.getId(),
+        order.getStore().getId(),
         order.getOrderItems().stream().map(OrderItemInfo::fromOrderItem).toList()
     );
   }

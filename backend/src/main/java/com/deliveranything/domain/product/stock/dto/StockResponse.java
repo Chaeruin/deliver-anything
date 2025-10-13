@@ -9,7 +9,7 @@ public record StockResponse(
   public static StockResponse from(Stock stock) {
     return new StockResponse(
         stock.getProduct().getId(),
-        stock.getQuantity()
+        stock.getTotalQuantity()
     );
   }
 }

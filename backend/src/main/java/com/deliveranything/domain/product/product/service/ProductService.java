@@ -58,6 +58,9 @@ public class ProductService {
 
     product.update(request.name(), request.description(), request.price(), request.imageUrl());
 
+    if(request.newStockQuantity() != null)
+      product.getStock().setTotalQuantity(request.newStockQuantity());
+
     if (!oldName.equals(request.name()) || !oldDescription.equals(request.description())) {
       keywordGenerationService.generateAndSaveKeywords(product.getId());
     }

@@ -64,6 +64,8 @@ public class Store extends BaseEntity {
     status = storeStatus;
   }
 
+  public boolean isOpen() { return status == StoreStatus.OPEN; }
+
   @Builder
   public Store(Long sellerProfileId, StoreCategory storeCategory, String imageUrl, String name, String description, String roadAddr, Point location) {
     this.sellerProfileId = sellerProfileId;
