@@ -186,8 +186,8 @@ public class CustomerProfileService {
     return true;
   }
 
-  public CustomerAddress getCurrentAddress(Long userId) {
-    CustomerProfile profile = getProfile(userId);
+  public CustomerAddress getCurrentAddress(Long customerProfileId) {
+    CustomerProfile profile = getProfileByProfileId(customerProfileId);
     if (profile == null || profile.getDefaultAddressId() == null) return null;
     return customerAddressRepository.findById(profile.getDefaultAddressId()).orElse(null);
   }
