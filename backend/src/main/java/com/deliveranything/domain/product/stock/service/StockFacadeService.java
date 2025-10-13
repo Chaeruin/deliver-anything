@@ -39,12 +39,12 @@ public class StockFacadeService {
 
   @Transactional
   public void handleOrderCreated(Long orderId, Long storeId, List<OrderItemInfo> items) {
+    stockCommandService.checkStoreOpen(storeId);
     try {
       executeWithRetry(() -> {
         for (var item : items) {
           Stock stock = stockCommandService.getStockForUpdate(storeId, item.productId());
-          stockCommandService.checkStoreOpen(storeId);
-          stockCommandService.holdStock(stock, item.quantity().intValue());
+          stockCommandService.holdStock(stock, item.quantity());
         }
         return null;
       });
@@ -61,7 +61,7 @@ public class StockFacadeService {
     executeWithRetry(() -> {
       for (var item : items) {
         Stock stock = stockCommandService.getStockForUpdate(storeId, item.productId());
-        stockCommandService.replenishStock(stock, item.quantity().intValue());
+        stockCommandService.replenishStock(stock, item.quantity());
       }
       return null;
     });
@@ -70,11 +70,11 @@ public class StockFacadeService {
 
   @Transactional
   public void handleOrderPaymentSucceeded(Long orderId, Long storeId, List<OrderItemInfo> items) {
+    stockCommandService.checkStoreOpen(storeId);
     executeWithRetry(() -> {
       for (var item : items) {
         Stock stock = stockCommandService.getStockForUpdate(storeId, item.productId());
-        stockCommandService.checkStoreOpen(storeId);
-        stockCommandService.commitStock(stock, item.quantity().intValue());
+        stockCommandService.commitStock(stock, item.quantity());
       }
       return null;
     });
@@ -86,7 +86,7 @@ public class StockFacadeService {
     executeWithRetry(() -> {
       for (var item : items) {
         Stock stock = stockCommandService.getStockForUpdate(storeId, item.productId());
-        stockCommandService.releaseStock(stock, item.quantity().intValue());
+        stockCommandService.releaseStock(stock, item.quantity());
       }
       return null;
     });

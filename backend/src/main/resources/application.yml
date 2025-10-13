@@ -5,6 +5,21 @@ spring:
   config:
     import: optional:file:.env   # .env 파일에서 환경변수 불러오기
 
+  # ===== Virtual Threads 설정 (Java 21+) =====
+  threads:
+    virtual:
+      enabled: true  # Virtual Threads 활성화
+
+  # ===== 비동기 작업 설정 =====
+  task:
+    execution:
+      pool:
+        # Virtual Thread 사용 시 아래 설정은 무시됨 (VirtualThreadConfig가 우선)
+        core-size: 8
+        max-size: 16
+        queue-capacity: 100
+      thread-name-prefix: async-
+
   sql:
     init:
       mode: never
@@ -41,6 +56,13 @@ spring:
       port: 6379           # Redis 포트
       password:            # Redis 비밀번호 없음
       timeout: 6000ms      # 연결 타임아웃 (6초)
+      lettuce:
+        pool:
+          # Virtual Thread 사용 시 connection pool 설정 최적화
+          max-active: 100    # 최대 연결 수
+          max-idle: 50       # 최대 유휴 연결
+          min-idle: 10       # 최소 유휴 연결
+          max-wait: 3000ms   # 연결 대기 시간
 
   elasticsearch:
     uris:
@@ -101,10 +123,14 @@ springdoc:
 logging:
   level:
     com.back: DEBUG                                     # 패키지 로그 레벨
+    com.deliveranything: INFO                           # 애플리케이션 로그
+    com.deliveranything.global.config.VirtualThreadConfig: INFO  # Virtual Thread 설정 로그
     org.hibernate.SQL: DEBUG                            # SQL 로그 출력
     org.hibernate.orm.jdbc.bind: TRACE                  # SQL 바인딩 로그 (파라미터 값)
     org.hibernate.orm.jdbc.extract: TRACE               # SQL 결과 추출 로그
     org.springframework.transaction.interceptor: TRACE  # 트랜잭션 동작 로그
+    org.springframework.scheduling: DEBUG               # @Async, @Scheduled 로그
+    org.springframework.data.redis: INFO                # Redis 로그
 
 management:
   endpoints:

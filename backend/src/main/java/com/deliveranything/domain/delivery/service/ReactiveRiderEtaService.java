@@ -8,9 +8,11 @@ import com.deliveranything.domain.user.profile.repository.RiderProfileRepository
 import com.deliveranything.global.exception.CustomException;
 import com.deliveranything.global.exception.ErrorCode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
@@ -20,8 +22,14 @@ import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
+/**
+ * Virtual Thread 기반 라이더 ETA 서비스
+ * - 반경 내 라이더 조회 (Redis GEOSEARCH)
+ * - ETA 계산 (Kakao API, 병렬 처리)
+ * - 블로킹 방식이지만 Virtual Thread에서 효율적으로 동작
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReactiveRiderEtaService {
@@ -30,10 +38,15 @@ public class ReactiveRiderEtaService {
   private final EtaService etaService;
   private final RiderProfileRepository riderProfileRepository;
 
-  //반경 내 라이더 검색 후 ETA 계산
-  public Mono<Map<String, Double>> findNearbyRidersEta(double customerLat, double customerLon,
-      double radiusKm) {
-    // Redis GEOSEARCH
+  /**
+   * 반경 내 라이더 검색 후 ETA 계산 (동기식)
+   * - Redis GEOSEARCH로 반경 내 라이더 조회
+   * @return Map<riderId, etaMinutes>
+   */
+  public Map<String, Double> findNearbyRidersEta(
+      double customerLat, double customerLon, double radiusKm
+  ) {
+    // 1. Redis GEOSEARCH로 반경 내 라이더 조회
     GeoResults<RedisGeoCommands.GeoLocation<String>> nearbyRiders =
         redisTemplate.opsForGeo().search(
             RIDER_GEO_KEY,
@@ -43,24 +56,40 @@ public class ReactiveRiderEtaService {
         );
 
     if (nearbyRiders == null || nearbyRiders.getContent().isEmpty()) {
-      return Mono.empty();
+      return new HashMap<>();
     }
 
+    // 2. ON 상태 라이더만 필터링
     List<String> riderIds = new ArrayList<>();
     List<Point> riderPoints = new ArrayList<>();
 
     for (GeoResult<RedisGeoCommands.GeoLocation<String>> result : nearbyRiders) {
       RedisGeoCommands.GeoLocation<String> loc = result.getContent();
-      RiderProfile riderProfile = riderProfileRepository.findById(Long.parseLong(loc.getName()))
-          .orElseThrow(() -> new CustomException(ErrorCode.RIDER_NOT_FOUND));
-      if (riderProfile.getToggleStatus() == RiderToggleStatus.OFF) {
-        continue; // OFF 상태 라이더는 제외
+      
+      try {
+        RiderProfile riderProfile = riderProfileRepository.findById(Long.parseLong(loc.getName()))
+            .orElseThrow(() -> new CustomException(ErrorCode.RIDER_NOT_FOUND));
+        
+        if (riderProfile.getToggleStatus() == RiderToggleStatus.OFF) {
+          continue; // OFF 상태 라이더는 제외
+        }
+        
+        riderIds.add(loc.getName());
+        riderPoints.add(loc.getPoint());
+      } catch (CustomException e) {
+        continue;
       }
-      riderIds.add(loc.getName());
-      riderPoints.add(loc.getPoint());
     }
 
-    // Kakao Map API → ETA 계산 (비동기)
-    return etaService.getEtaForMultipleReactive(customerLat, customerLon, riderPoints, riderIds);
+    if (riderIds.isEmpty()) {
+      return new HashMap<>();
+    }
+
+    // 3. Kakao Map API로 ETA 계산 (병렬 처리, Virtual Thread)
+    Map<String, Double> etaMap = etaService.getEtaForMultiple(
+        customerLat, customerLon, riderPoints, riderIds
+    );
+    
+    return etaMap;
   }
 }
