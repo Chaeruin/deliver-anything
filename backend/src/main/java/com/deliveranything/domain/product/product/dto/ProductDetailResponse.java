@@ -8,7 +8,7 @@ public record ProductDetailResponse(
     String name,
     String description,
     Integer price,
-    Integer stockQuantity,
+    Integer stockTotalQuantity,
     Integer availableQuantity,
     String imageUrl
 ) {
