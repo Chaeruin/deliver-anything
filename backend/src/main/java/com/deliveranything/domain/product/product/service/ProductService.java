@@ -6,10 +6,12 @@ import com.deliveranything.domain.product.product.dto.ProductResponse;
 import com.deliveranything.domain.product.product.dto.ProductSearchRequest;
 import com.deliveranything.domain.product.product.dto.ProductUpdateRequest;
 import com.deliveranything.domain.product.product.entity.Product;
+import com.deliveranything.domain.product.product.event.ProductKeywordsChangedEvent;
 import com.deliveranything.domain.product.product.repository.ProductRepository;
 import com.deliveranything.domain.store.store.entity.Store;
 import com.deliveranything.domain.store.store.service.StoreService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class ProductService {
   private final ProductRepository productRepository;
   private final StoreService storeService;
   private final KeywordGenerationService keywordGenerationService;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
   public ProductResponse createProduct(Long storeId, ProductCreateRequest request) {
@@ -46,6 +49,10 @@ public class ProductService {
     Product product = productRepository.getById(productId);
     product.validateStore(storeId);
     productRepository.delete(product);
+
+    eventPublisher.publishEvent(new ProductKeywordsChangedEvent(
+        product.getStore().getId(), product.getId()
+    ));
   }
 
   @Transactional
