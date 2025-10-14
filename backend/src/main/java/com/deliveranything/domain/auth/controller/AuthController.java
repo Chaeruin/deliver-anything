@@ -76,7 +76,6 @@ public class AuthController {
       HttpServletResponse httpResponse) {
 
     String finalDeviceId = deviceId;
-    // X-Device-ID 헤더가 없는 경우, 새로 생성하여 응답 헤더에 추가
     if (finalDeviceId == null || finalDeviceId.isBlank()) {
       finalDeviceId = UUID.randomUUID().toString();
       httpResponse.addHeader("X-Device-ID", finalDeviceId);
@@ -84,6 +83,8 @@ public class AuthController {
     }
 
     log.info("로그인 시도 - 기기 ID: {}", finalDeviceId);
+
+    httpResponse.addHeader("X-Device-ID", finalDeviceId);
 
     // 로그인 처리 (storeId + 프로필 상세 정보 포함)
     AuthService.LoginResult result = authService.login(
