@@ -233,6 +233,10 @@ public class ReviewService {
     log.info("상점 리뷰 리스트 조회 요청 - storeId: {}, sort: {}, cursor: {}, size: {}", storeId, sort, cursor,
         size);
 
+    if (storeService.getStoreById(storeId) == null) {
+      throw new CustomException(ErrorCode.STORE_NOT_FOUND);
+    }
+
     Object[] decoded = CursorUtil.decode(cursor);
 
     String[] decodedCursor = null;
@@ -448,7 +452,7 @@ public class ReviewService {
                 return redis.call('SCARD', KEYS[1])
         """;
 
-    return redisTemplate.execute((RedisCallback<Long>) connection ->
+    Long result = redisTemplate.execute((RedisCallback<Long>) connection ->
         connection.eval(
             luaScript.getBytes(),
             ReturnType.INTEGER,
@@ -461,6 +465,9 @@ public class ReviewService {
             reviewId.toString().getBytes() // ARGV[4] : ZSet member
         )
     );
+
+    // RedisTemplate.execute() 또는 connection.eval()의 결과가 null일 경우 0L로 대체
+    return result != null ? result : 0L;
   }
 
   /* 별점 평균값 조회 메서드 - 판매자, 배달원 */

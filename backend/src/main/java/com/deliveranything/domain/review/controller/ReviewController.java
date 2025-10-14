@@ -119,7 +119,6 @@ public class ReviewController {
       @ModelAttribute StoreReviewListRequest request) {
     ReviewRatingAndListResponseDto response = reviewService.getStoreReviews(storeId, request.sort(), request.cursor(), request.size());
 
-    //TODO: ReviewRating 포함
     return ResponseEntity.status(HttpStatus.OK)
         .body(ApiResponse.success(response));
   }

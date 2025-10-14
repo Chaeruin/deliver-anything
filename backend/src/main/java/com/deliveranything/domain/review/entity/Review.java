@@ -8,7 +8,9 @@ import com.deliveranything.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -57,26 +59,34 @@ public class Review extends BaseEntity {
 
   @Schema(description = "좋아요 수")
   @Column(name = "like_count")
-  private int likeCount;
+  private int likeCount = 0;
 
   //========================생성 메소드===========================
   @Builder
   public Review(int rating, String comment, ReviewTargetType targetType, Long targetId,
-      CustomerProfile customerProfile) {
+      CustomerProfile customerProfile, List<ReviewPhoto> reviewPhotos) {
     this.rating = rating;
     this.comment = comment;
+    this.reviewPhotos = reviewPhotos;
     this.targetType = targetType;
     this.targetId = targetId;
     this.customerProfile = customerProfile;
   }
 
   public static Review from(ReviewCreateRequest request, CustomerProfile customerProfile) {
+    List<ReviewPhoto> photos = Arrays.stream(request.photoUrls())
+        .map(url -> ReviewPhoto.builder()
+            .photoUrl(url)
+            .build())
+        .collect(Collectors.toList());
+
     return Review.builder()
         .rating(request.rating())
         .comment(request.comment())
         .targetType(request.targetType())
         .targetId(request.targetId())
         .customerProfile(customerProfile)
+        .reviewPhotos(photos)
         .build();
   }
 

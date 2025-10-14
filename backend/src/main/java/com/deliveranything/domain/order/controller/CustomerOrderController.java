@@ -41,7 +41,7 @@ public class CustomerOrderController {
       @AuthenticationPrincipal SecurityUser securityUser,
       @Valid @RequestBody OrderCreateRequest orderCreateRequest
   ) {
-    customerOrderService.createOrder(securityUser.getCurrentActiveProfile().getId(),
+    customerOrderService.createOrder(securityUser.getCurrentActiveProfileIdSafe(),
         orderCreateRequest);
     return ResponseEntity.ok().body(ApiResponse.success("주문이 접수되어 처리중입니다."));
   }
@@ -55,7 +55,8 @@ public class CustomerOrderController {
       @RequestParam(defaultValue = "10") int size
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("소비자 전체 주문 내역 조회 성공",
-        customerOrderService.getCustomerOrdersByCursor(securityUser.getId(), cursor, size)));
+        customerOrderService.getCustomerOrdersByCursor(securityUser.getCurrentActiveProfileIdSafe(),
+            cursor, size)));
   }
 
   @GetMapping("/{orderId}")
@@ -66,7 +67,8 @@ public class CustomerOrderController {
       @PathVariable Long orderId
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("소비자 주문 단일 조회 성공",
-        customerOrderService.getCustomerOrder(orderId, securityUser.getId())));
+        customerOrderService.getCustomerOrder(orderId,
+            securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/in-progress")
@@ -76,7 +78,7 @@ public class CustomerOrderController {
       @AuthenticationPrincipal SecurityUser securityUser
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("진행중인 소비자 주문 조회 성공",
-        customerOrderService.getProgressingOrders(securityUser.getId())));
+        customerOrderService.getProgressingOrders(securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/completed")
@@ -88,8 +90,8 @@ public class CustomerOrderController {
       @RequestParam(defaultValue = "10") int size
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("배달 완료된 소비자 주문 조회 성공",
-        customerOrderService.getCompletedOrdersByCursor(securityUser.getId(), nextPageToken,
-            size)));
+        customerOrderService.getCompletedOrdersByCursor(
+            securityUser.getCurrentActiveProfileIdSafe(), nextPageToken, size)));
   }
 
   @PostMapping("/{merchantUid}/pay")
