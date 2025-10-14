@@ -44,6 +44,11 @@ public class OrderAcceptedRedisSubscriber implements MessageListener {
       String payload = new String(message.getBody());
       OrderAcceptedEvent event = objectMapper.readValue(payload, OrderAcceptedEvent.class);
 
+      log.info("주문 수락 이벤트 수신 했을 때 도착지의 latitude 위도 -90~90: {} / longitude 경도 -180~180: {}",
+          event.customerLat(), event.customerLon());
+      log.info("주문 수락 이벤트 수신 했을 때 상점의 latitude 위도 -90~90: {} / longitude 경도 -180~180: {}",
+          event.storeLat(), event.storeLon());
+
       List<RiderNotificationDto> notifications = orderNotificationService.processOrderEvent(event);
       if (!notifications.isEmpty()) {
         orderAcceptedNotifier.publish(notifications);

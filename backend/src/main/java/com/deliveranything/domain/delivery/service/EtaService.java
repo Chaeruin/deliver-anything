@@ -1,5 +1,8 @@
 package com.deliveranything.domain.delivery.service;
 
+import com.deliveranything.domain.delivery.event.dto.OrderAssignFailedEvent;
+import com.deliveranything.domain.notification.subscriber.delivery.OrderAssignFailedNotifier;
+import com.deliveranything.domain.order.event.OrderAcceptedEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,16 +34,19 @@ public class EtaService {
   private String kakaoApiKey;
 
   private static final String KAKAO_BASE_URL = "https://apis-navi.kakaomobility.com/v1";
+  private final OrderAssignFailedNotifier orderAssignFailedNotifier;
 
   /**
    * 여러 라이더의 ETA 계산 (동기식 + 병렬 처리) - Virtual Thread에서 병렬로 실행 - @Async로 각 API 호출을 독립적인 Virtual
    * Thread에서 처리
    */
   public Map<String, Double> getEtaForMultiple(
-      double userLat, double userLon,
+      OrderAcceptedEvent order,
       List<Point> riderPoints,
       List<String> riderIds
   ) {
+    Double userLat = order.customerLat();
+    Double userLon = order.customerLon();
     // 각 라이더의 ETA를 병렬로 계산 (Virtual Thread)
     List<CompletableFuture<Map.Entry<String, Double>>> futures = new java.util.ArrayList<>();
 
@@ -62,6 +68,10 @@ public class EtaService {
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     log.info("Calculated ETA for {} out of {} riders", result.size(), riderIds.size());
+
+    if (result.isEmpty()) {
+      orderAssignFailedNotifier.publish(new OrderAssignFailedEvent(order));
+    }
 
     return result;
   }
@@ -106,9 +116,12 @@ public class EtaService {
    * 상점 <-> 주문자 사이 거리 계산 (동기식) - Virtual Thread에서 블로킹 호출해도 효율적
    */
   public Map<String, Double> getDistance(
-      double storeLat, double storeLon,
-      double userLat, double userLon
+      OrderAcceptedEvent order
   ) {
+    Double storeLat = order.storeLat();
+    Double storeLon = order.storeLon();
+    Double userLat = order.customerLat();
+    Double userLon = order.customerLon();
     WebClient webClient = webClientBuilder.baseUrl(KAKAO_BASE_URL).build();
 
     // 가상 스레드 풀 사용
@@ -126,7 +139,9 @@ public class EtaService {
             .block();
 
         if (response == null || !response.containsKey("routes")) {
-          throw new IllegalStateException("Invalid API response");
+          log.warn("Invalid response from Kakao API");
+          orderAssignFailedNotifier.publish(new OrderAssignFailedEvent(order));
+          return Map.of("distance", 0.0);
         }
 
         Map<String, Object> routes = (Map<String, Object>) ((List<?>) response.get("routes")).get(
@@ -142,7 +157,9 @@ public class EtaService {
       return future.get();
 
     } catch (ExecutionException | InterruptedException e) {
-      throw new RuntimeException("Distance calculation failed", e);
+      log.warn("Distance calculation failed");
+      orderAssignFailedNotifier.publish(new OrderAssignFailedEvent(order));
     }
+    return Map.of("distance", 0.0);
   }
 }

@@ -2,14 +2,17 @@ package com.deliveranything.domain.delivery.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import com.deliveranything.domain.delivery.event.dto.OrderAssignFailedEvent;
 import com.deliveranything.domain.delivery.event.dto.RiderNotificationDto;
 import com.deliveranything.domain.order.event.OrderAcceptedEvent;
 import com.deliveranything.domain.order.event.dto.OrderItemInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +33,20 @@ class OrderNotificationServiceTest {
   @Mock
   private EtaService etaService;
 
+  private OrderAcceptedEvent orderAcceptedEvent;
+  private OrderAssignFailedEvent orderAssignFailedEvent;
+
+  @BeforeEach
+  void setUp() {
+    // Sample order event
+    orderAcceptedEvent = new OrderAcceptedEvent(
+        "order123", new ArrayList<>(), 1L, 1L,
+        "storeName",
+        37.5, 127.0, 37.6, 127.1
+    );
+    orderAssignFailedEvent = new OrderAssignFailedEvent(orderAcceptedEvent);
+  }
+
   @Test
   @DisplayName("배송비 계산 - 기본 거리 (3km 이하)")
   void 배송비_계산_기본거리_테스트() {
@@ -37,9 +54,9 @@ class OrderNotificationServiceTest {
     OrderAcceptedEvent event = createOrderEvent();
 
     // Mock 설정
-    when(etaService.getDistance(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+    when(etaService.getDistance(event))
         .thenReturn(Map.of("distance", 2.0));
-    when(reactiveRiderEtaService.findNearbyRidersEta(anyDouble(), anyDouble(), anyDouble()))
+    when(reactiveRiderEtaService.findNearbyRidersEta(eq(event), anyDouble()))
         .thenReturn(Map.of("rider1", 15.0));
 
     // When
@@ -60,9 +77,9 @@ class OrderNotificationServiceTest {
     OrderAcceptedEvent event = createOrderEvent();
 
     // Mock 설정
-    when(etaService.getDistance(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+    when(etaService.getDistance(event))
         .thenReturn(Map.of("distance", 5.0));
-    when(reactiveRiderEtaService.findNearbyRidersEta(anyDouble(), anyDouble(), anyDouble()))
+    when(reactiveRiderEtaService.findNearbyRidersEta(eq(event), anyDouble()))
         .thenReturn(Map.of("rider1", 20.0));
 
     // When
@@ -81,9 +98,9 @@ class OrderNotificationServiceTest {
     OrderAcceptedEvent event = createOrderEvent();
 
     // Mock 설정
-    when(etaService.getDistance(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+    when(etaService.getDistance(event))
         .thenReturn(Map.of("distance", 4.3));
-    when(reactiveRiderEtaService.findNearbyRidersEta(anyDouble(), anyDouble(), anyDouble()))
+    when(reactiveRiderEtaService.findNearbyRidersEta(eq(event), anyDouble()))
         .thenReturn(Map.of("rider1", 18.0));
 
     // When
@@ -101,9 +118,9 @@ class OrderNotificationServiceTest {
     OrderAcceptedEvent event = createOrderEvent();
 
     // Mock 설정
-    when(etaService.getDistance(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+    when(etaService.getDistance(event))
         .thenReturn(Map.of("distance", 2.0));
-    when(reactiveRiderEtaService.findNearbyRidersEta(anyDouble(), anyDouble(), anyDouble()))
+    when(reactiveRiderEtaService.findNearbyRidersEta(eq(event), anyDouble()))
         .thenReturn(Map.of());
 
     // When
@@ -120,9 +137,9 @@ class OrderNotificationServiceTest {
     OrderAcceptedEvent event = createOrderEvent();
 
     // Mock 설정
-    when(etaService.getDistance(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+    when(etaService.getDistance(event))
         .thenReturn(Map.of("distance", 2.0));
-    when(reactiveRiderEtaService.findNearbyRidersEta(anyDouble(), anyDouble(), anyDouble()))
+    when(reactiveRiderEtaService.findNearbyRidersEta(eq(event), anyDouble()))
         .thenReturn(Map.of(
             "rider1", 15.0,
             "rider2", 25.0
@@ -151,9 +168,9 @@ class OrderNotificationServiceTest {
     OrderAcceptedEvent event = createOrderEvent();
 
     // Mock 설정
-    when(etaService.getDistance(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+    when(etaService.getDistance(event))
         .thenReturn(Map.of()); // 빈 맵
-    when(reactiveRiderEtaService.findNearbyRidersEta(anyDouble(), anyDouble(), anyDouble()))
+    when(reactiveRiderEtaService.findNearbyRidersEta(eq(event), anyDouble()))
         .thenReturn(Map.of("rider1", 15.0));
 
     // When
@@ -171,6 +188,7 @@ class OrderNotificationServiceTest {
     return new OrderAcceptedEvent(
         "order123",
         orderItems,
+        1L, 1L,
         "맛있는 치킨집",
         37.5, 127.0, // store
         37.6, 127.1  // customer

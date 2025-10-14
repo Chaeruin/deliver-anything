@@ -136,6 +136,8 @@ public class OrderService {
   @Transactional(readOnly = true)
   public void processStockReserved(Long orderId) {
     Order order = getOrderById(orderId);
+    log.info("주문 재고 홀드 됨. 클라이언트에게 주문 생성 관련 정보 전달.");
+
     eventPublisher.publishEvent(OrderCreatedForCustomerEvent.fromOrder(order));
   }
 

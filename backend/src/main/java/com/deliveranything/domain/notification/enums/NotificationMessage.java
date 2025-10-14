@@ -24,6 +24,7 @@ public enum NotificationMessage {
   RIDER_STATUS_CHANGED("배달원 상태가 변경되었습니다."),
   RIDER_ACCEPTED_ORDER("수락된 주문이 표시됩니다."),
   RIDER_DECISION("배달원이 주문 상태를 변경했습니다."),
+  ORDER_ASSIGN_FAILED("배달원 배정에 실패했습니다. 다시 시도해주세요."),
   ;
 
   private final String message;

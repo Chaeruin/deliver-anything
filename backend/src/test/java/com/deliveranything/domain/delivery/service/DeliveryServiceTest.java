@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import com.deliveranything.domain.delivery.entity.Delivery;
 import com.deliveranything.domain.delivery.enums.DeliveryStatus;
 import com.deliveranything.domain.delivery.repository.DeliveryRepository;
+import com.deliveranything.domain.order.service.DeliveryOrderService;
 import com.deliveranything.domain.settlement.service.SettlementDetailService;
 import com.deliveranything.domain.store.store.entity.Store;
 import com.deliveranything.domain.user.profile.entity.CustomerProfile;
@@ -14,6 +15,7 @@ import com.deliveranything.domain.user.profile.entity.RiderProfile;
 import com.deliveranything.domain.user.profile.enums.ProfileType;
 import com.deliveranything.domain.user.profile.enums.RiderToggleStatus;
 import com.deliveranything.domain.user.profile.service.CustomerProfileService;
+import com.deliveranything.domain.user.profile.service.RiderProfileService;
 import com.deliveranything.domain.user.profile.service.SellerProfileService;
 import com.deliveranything.domain.user.user.entity.User;
 import java.time.LocalDateTime;
@@ -37,10 +39,10 @@ class DeliveryServiceTest {
   private DeliveryRepository deliveryRepository;
 
   @Mock
-  private com.deliveranything.domain.user.profile.service.RiderProfileService riderProfileService;
+  private RiderProfileService riderProfileService;
 
   @Mock
-  private com.deliveranything.domain.order.service.DeliveryOrderService deliveryOrderService;
+  private DeliveryOrderService deliveryOrderService;
 
   @Mock
   private SellerProfileService sellerProfileService;

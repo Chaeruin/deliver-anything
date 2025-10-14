@@ -120,7 +120,7 @@ public class SecurityConfig {
     configuration.setAllowCredentials(true);
 
     // 클라이언트 JS에서 Authorization 헤더 접근 가능
-    configuration.setExposedHeaders(List.of("Authorization"));
+    configuration.setExposedHeaders(List.of("Authorization", "X-Device-ID"));
 
     // Preflight 캐시 시간
     configuration.setMaxAge(3600L);
