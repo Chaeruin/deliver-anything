@@ -1,6 +1,7 @@
 package com.deliveranything.domain.order.service;
 
 import com.deliveranything.domain.order.dto.OrderCreateRequest;
+import com.deliveranything.domain.order.dto.OrderCreateResponse;
 import com.deliveranything.domain.order.dto.OrderItemRequest;
 import com.deliveranything.domain.order.dto.OrderResponse;
 import com.deliveranything.domain.order.entity.Order;
@@ -39,7 +40,7 @@ public class CustomerOrderService {
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
-  public void createOrder(Long customerId, OrderCreateRequest orderCreateRequest) {
+  public OrderCreateResponse createOrder(Long customerId, OrderCreateRequest orderCreateRequest) {
     Order order = Order.builder()
         .customer(customerProfileService.getProfileByProfileId(customerId))
         .store(storeService.getStoreById(orderCreateRequest.storeId()))
@@ -61,7 +62,12 @@ public class CustomerOrderService {
 
       order.addOrderItem(orderItem);
     }
-    eventPublisher.publishEvent(OrderCreatedEvent.from(orderRepository.save(order)));
+
+    Order savedOrder = orderRepository.save(order);
+
+    eventPublisher.publishEvent(OrderCreatedEvent.from(savedOrder));
+
+    return OrderCreateResponse.from(savedOrder);
   }
 
   @Transactional(readOnly = true)

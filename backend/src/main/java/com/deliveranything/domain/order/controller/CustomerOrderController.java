@@ -2,6 +2,7 @@ package com.deliveranything.domain.order.controller;
 
 import com.deliveranything.domain.order.dto.OrderCancelRequest;
 import com.deliveranything.domain.order.dto.OrderCreateRequest;
+import com.deliveranything.domain.order.dto.OrderCreateResponse;
 import com.deliveranything.domain.order.dto.OrderPayRequest;
 import com.deliveranything.domain.order.dto.OrderResponse;
 import com.deliveranything.domain.order.service.CustomerOrderService;
@@ -37,13 +38,14 @@ public class CustomerOrderController {
   @PostMapping
   @Operation(summary = "주문 생성", description = "소비자가 상점에 주문을 요청한 경우")
   @PreAuthorize("@profileSecurity.isCustomer(#securityUser)")
-  public ResponseEntity<ApiResponse<String>> create(
+  public ResponseEntity<ApiResponse<OrderCreateResponse>> create(
       @AuthenticationPrincipal SecurityUser securityUser,
       @Valid @RequestBody OrderCreateRequest orderCreateRequest
   ) {
-    customerOrderService.createOrder(securityUser.getCurrentActiveProfileIdSafe(),
-        orderCreateRequest);
-    return ResponseEntity.ok().body(ApiResponse.success("주문이 접수되어 처리중입니다."));
+
+    return ResponseEntity.ok().body(ApiResponse.success("주문이 접수되어 처리중입니다.",
+        customerOrderService.createOrder(securityUser.getCurrentActiveProfileIdSafe(),
+            orderCreateRequest)));
   }
 
   @GetMapping
