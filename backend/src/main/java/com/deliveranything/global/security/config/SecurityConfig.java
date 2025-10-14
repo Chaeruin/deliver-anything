@@ -70,6 +70,7 @@ public class SecurityConfig {
 
             // 인증/인가 관련 (로그인, 회원가입, 소셜 로그인, 토큰 재발급 등)
             .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/v1/auth/signup", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
+            .requestMatchers("/api/v1/auth/verification/send", "/api/v1/auth/verification/verify").permitAll()
             .requestMatchers("/api/v1/auth/logout", "/api/v1/auth/logout/all").authenticated()
 
             // Actuator

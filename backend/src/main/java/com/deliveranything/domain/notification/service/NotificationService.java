@@ -19,74 +19,74 @@ public class NotificationService {
   private final NotificationRepository notificationRepository;
   private final EmitterRepository emitterRepository;
 
-  /**
-   * 프로필 ID 기준 알림 생성 및 모든 디바이스 전송
-   */
-  public Notification sendNotification(Long profileId, NotificationType type, String message,
-      String data) {
-    Notification notification = new Notification();
-    notification.setRecipientId(profileId);
-    notification.setType(type);
-    notification.setMessage(message);
-    notification.setData(data);
+  // 알림 생성 및 전송 (모든 디바이스에 브로드캐스트)
+  public Notification sendNotification(Long profileId, NotificationType type, String message, String data) {
+    Notification notification = Notification.builder()
+        .recipientId(profileId)
+        .type(type)
+        .message(message)
+        .data(data)
+        .build();
 
     notificationRepository.save(notification);
-
     broadcastToEmitters(profileId, notification, "notification");
 
     return notification;
   }
 
-  /**
-   * 알림 읽음 처리 + 다른 디바이스 동기화
-   */
+  // 알림 읽음 처리 및 다른 디바이스에 동기화
   @Transactional
   public void markAsRead(Long notificationId, Long profileId) {
     Notification notification = notificationRepository.findById(notificationId)
         .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
 
-    if (notification.getRecipientId().equals(profileId) && !notification.isRead()) {
-      notification.setRead(true);
+    if (!notification.getRecipientId().equals(profileId)) {
+      throw new IllegalArgumentException("Invalid recipient for this notification");
+    }
 
-      // 읽음 상태를 다른 디바이스에도 브로드캐스트
+    if (!notification.isRead()) {
+      notification.setRead(true);
       broadcastToEmitters(profileId, notificationId, "notification-read");
     }
   }
 
-  /**
-   * 프로필 ID 기준 알림 목록 조회
-   */
+  // 알림 목록 조회
   public List<Notification> getNotifications(Long profileId, Boolean isRead) {
-    if (isRead == null) {
-      return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(profileId);
-    } else {
-      return notificationRepository.findByRecipientIdAndIsReadOrderByCreatedAtDesc(profileId,
-          isRead);
-    }
+    return (isRead == null)
+        ? notificationRepository.findByRecipientIdOrderByCreatedAtDesc(profileId)
+        : notificationRepository.findByRecipientIdAndIsReadOrderByCreatedAtDesc(profileId, isRead);
   }
 
+  // 읽지 않은 알림 개수 조회
   public long getUnreadCount(Long profileId) {
     return notificationRepository.countByRecipientIdAndIsReadFalse(profileId);
   }
 
-  /**
-   * 멀티 디바이스 브로드캐스트 공통 메서드
-   */
+  // 프로필 ID 기준 모든 SSE Emitter에 브로드캐스트
   private void broadcastToEmitters(Long profileId, Object payload, String eventName) {
     List<SseEmitter> emitters = emitterRepository.getAllForProfile(profileId);
+
     for (SseEmitter emitter : emitters) {
       try {
-        emitter.send(SseEmitter.event()
-            .id(payload instanceof Notification ? ((Notification) payload).getId().toString()
-                : payload.toString())
+        SseEmitter.SseEventBuilder event = SseEmitter.event()
+            .id(resolveEventId(payload))
             .name(eventName)
-            .data(payload));
+            .data(payload);
+
+        emitter.send(event);
+
       } catch (Exception e) {
-        log.warn("SSE send failed for profileId {}: {}. Completing emitter.", profileId,
-            e.getMessage());
-        // Emitter를 완료시켜 onCompletion 콜백이 호출되도록 함
-        emitter.complete();
+        log.warn("SSE send failed for profileId {}: {}. Completing emitter.", profileId, e.getMessage());
+        emitter.complete(); // onCompletion 콜백 유도
       }
     }
+  }
+
+  // payload에 따른 SSE 이벤트 ID 생성
+  private String resolveEventId(Object payload) {
+    if (payload instanceof Notification notification) {
+      return notification.getId().toString();
+    }
+    return payload.toString();
   }
 }

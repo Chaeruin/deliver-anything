@@ -55,37 +55,16 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
   private void processAuthentication(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
 
-    String uri = request.getRequestURI();
-
-    if (!uri.startsWith("/api/") || isPublicEndpoint(uri)) {
-      filterChain.doFilter(request, response);
-      return;
-    }
-
     String accessToken = extractAccessToken(request);
 
-    if (!StringUtils.hasText(accessToken)) {
-      filterChain.doFilter(request, response);
-      return;
+    if (StringUtils.hasText(accessToken)) {
+      User user = authenticateWithAccessToken(accessToken);
+      if (user != null) {
+        setAuthentication(user);
+      }
     }
 
-    User user = authenticateWithAccessToken(accessToken);
-
-    if (user == null) {
-      throw new CustomException(ErrorCode.TOKEN_INVALID);
-    }
-
-    setAuthentication(user);
     filterChain.doFilter(request, response);
-  }
-
-
-  private boolean isPublicEndpoint(String uri) {
-    return uri.equals("/api/v1/auth/login")
-           || uri.equals("/api/v1/auth/signup")
-           || uri.equals("/api/v1/auth/refresh")
-           || uri.equals("/api/v1/auth/verification/send")
-           || uri.equals("/api/v1/auth/verification/verify");
   }
 
   private String extractAccessToken(HttpServletRequest request) {
@@ -113,7 +92,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
       return null;
     }
 
-    Long userId = (Long) payload.get("id");
+    Long userId = Long.parseLong(String.valueOf(payload.get("id")));
     return userRepository.findByIdWithProfile(userId).orElse(null);
   }
 

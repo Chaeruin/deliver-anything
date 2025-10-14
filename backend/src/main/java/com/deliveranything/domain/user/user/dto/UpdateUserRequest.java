@@ -10,6 +10,7 @@ public record UpdateUserRequest(
     String username,
 
     @Pattern(regexp = "^01[0-9]{8,9}$", message = "올바른 휴대폰 번호 형식이 아닙니다.")
+    @Size(max = 20, message = "전화번호는 20자 이하로 입력해주세요.")
     String phoneNumber
 ) {
 

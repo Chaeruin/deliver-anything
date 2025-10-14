@@ -8,16 +8,22 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
+@Builder
 @Table(
     name = "notifications",
     indexes = @Index(name = "idx_notification_recipient_id_created_at", columnList = "recipientId, createdAt")
 )
+@NoArgsConstructor
+@AllArgsConstructor
 public class Notification extends BaseEntity {
 
   @Column(nullable = false)
@@ -33,16 +39,8 @@ public class Notification extends BaseEntity {
   @Column(length = 500)
   private String data; // JSON
 
+  @Builder.Default
   @Column(nullable = false)
   private boolean isRead = false;
 
 }
-
-/**
- *
- * {
- *   "type": "NEW_ORDER",
- *   "message": "새 주문이 도착했습니다.",
- *   "data": {"orderId": 12345, "items": [{"name":"치킨","qty":2}]}
- * }
- */
