@@ -2,13 +2,12 @@ package com.deliveranything.domain.settlement.service;
 
 import com.deliveranything.domain.settlement.dto.SettlementResponse;
 import com.deliveranything.domain.settlement.dto.SummaryResponse;
+import com.deliveranything.domain.settlement.dto.projection.SettlementProjection;
 import com.deliveranything.domain.settlement.dto.projection.SettlementSummaryProjection;
 import com.deliveranything.domain.settlement.entity.SettlementBatch;
 import com.deliveranything.domain.settlement.entity.SettlementDetail;
 import com.deliveranything.domain.settlement.repository.SettlementBatchRepository;
 import com.deliveranything.domain.settlement.service.dto.SettlementSummary;
-import com.deliveranything.global.exception.CustomException;
-import com.deliveranything.global.exception.ErrorCode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +52,9 @@ public class SettlementBatchService {
       LocalDate startDate,
       LocalDate endDate
   ) {
-    return SettlementResponse.fromProjection(
-        settlementBatchRepository.findSettlementByTargetIdAndPeriod(targetId, startDate, endDate)
-            .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_BATCH_NOT_FOUND)));
+    SettlementProjection settlementProjection = settlementBatchRepository
+        .findSettlementByTargetIdAndPeriod(targetId, startDate, endDate);
+    return SettlementResponse.fromProjectionAndPeriod(settlementProjection, startDate, endDate);
   }
 
   @Transactional(readOnly = true)
@@ -110,7 +109,6 @@ public class SettlementBatchService {
 
   // 요약 카드에 필요한 정산된 데이터 조회
   private SettlementSummaryProjection getSettlementBatchSummary(Long targetId) {
-    return settlementBatchRepository.findSettlementSummaryByTargetId(targetId)
-        .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_BATCH_NOT_FOUND));
+    return settlementBatchRepository.findSettlementSummaryByTargetId(targetId);
   }
 }

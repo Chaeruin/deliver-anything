@@ -34,4 +34,19 @@ public record SettlementResponse(
         sp.maxDate()
     );
   }
+
+  public static SettlementResponse fromProjectionAndPeriod(
+      SettlementProjection sp,
+      LocalDate startDate,
+      LocalDate endDate
+  ) {
+    return new SettlementResponse(
+        sp.targetTotalAmount(),
+        sp.totalPlatformFee(),
+        sp.settledAmount(),
+        sp.transactionCount().intValue(),
+        startDate,
+        endDate
+    );
+  }
 }

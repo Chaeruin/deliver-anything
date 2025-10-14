@@ -33,7 +33,7 @@ public class RiderSettlementController {
       @AuthenticationPrincipal SecurityUser securityUser
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("배달원의 일별 정산 내역 조회 성공",
-        settlementBatchService.getSettlementsByDay(securityUser.getId())));
+        settlementBatchService.getSettlementsByDay(securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/week")
@@ -43,7 +43,7 @@ public class RiderSettlementController {
       @AuthenticationPrincipal SecurityUser securityUser
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("배달원의 주간별 정산 내역 조회 성공",
-        settlementBatchService.getSettlementsByWeek(securityUser.getId())));
+        settlementBatchService.getSettlementsByWeek(securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/month")
@@ -53,7 +53,8 @@ public class RiderSettlementController {
       @AuthenticationPrincipal SecurityUser securityUser
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("배달원의 월별 정산 내역 조회 성공",
-        settlementBatchService.getSettlementsByMonth(securityUser.getId())));
+        settlementBatchService.getSettlementsByMonth(
+            securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/period")
@@ -65,7 +66,8 @@ public class RiderSettlementController {
       @RequestParam LocalDate endDate
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("정산 기간 조회 성공",
-        settlementBatchService.getSettlementByPeriod(securityUser.getId(), startDate, endDate)));
+        settlementBatchService.getSettlementByPeriod(securityUser.getCurrentActiveProfileIdSafe(),
+            startDate, endDate)));
   }
 
   @GetMapping("/summary")
@@ -75,6 +77,6 @@ public class RiderSettlementController {
       @AuthenticationPrincipal SecurityUser securityUser
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("정산 요약 카드 조회 성공",
-        settlementBatchService.getSettlementSummary(securityUser.getId())));
+        settlementBatchService.getSettlementSummary(securityUser.getCurrentActiveProfileIdSafe())));
   }
 }

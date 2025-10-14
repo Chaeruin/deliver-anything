@@ -77,7 +77,7 @@ public enum ErrorCode {
   STORE_CLOSED(HttpStatus.BAD_REQUEST, "STORE-400", "상점이 현재 닫혀 있어 주문을 처리할 수 없습니다."),
 
   // 정산 관련 오류
-  SETTLEMENT_BATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT-BATCH-404", "일별 정산 정보를 찾을 수 없습니다."),
+  SETTLEMENT_BATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT-BATCH-404", "정산 정보를 찾을 수 없습니다."),
   SETTLEMENT_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT-DETAIL-404",
       "세부 정산 정보를 찾을 수 없습니다."),
 

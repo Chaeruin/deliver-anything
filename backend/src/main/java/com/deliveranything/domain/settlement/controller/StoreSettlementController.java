@@ -34,7 +34,7 @@ public class StoreSettlementController {
       @PathVariable Long storeId
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("상점의 일별 정산 내역 조회 성공",
-        settlementBatchService.getSettlementsByDay(securityUser.getId())));
+        settlementBatchService.getSettlementsByDay(securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/{storeId}/week")
@@ -45,7 +45,7 @@ public class StoreSettlementController {
       @PathVariable Long storeId
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("상점의 주간별 정산 내역 조회 성공",
-        settlementBatchService.getSettlementsByWeek(securityUser.getId())));
+        settlementBatchService.getSettlementsByWeek(securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/{storeId}/month")
@@ -56,7 +56,8 @@ public class StoreSettlementController {
       @PathVariable Long storeId
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("상점의 월별 정산 내역 조회 성공",
-        settlementBatchService.getSettlementsByMonth(securityUser.getId())));
+        settlementBatchService.getSettlementsByMonth(
+            securityUser.getCurrentActiveProfileIdSafe())));
   }
 
   @GetMapping("/{storeId}/period")
@@ -69,6 +70,7 @@ public class StoreSettlementController {
       @RequestParam LocalDate endDate
   ) {
     return ResponseEntity.ok().body(ApiResponse.success("정산 기간 조회 성공",
-        settlementBatchService.getSettlementByPeriod(securityUser.getId(), startDate, endDate)));
+        settlementBatchService.getSettlementByPeriod(securityUser.getCurrentActiveProfileIdSafe(),
+            startDate, endDate)));
   }
 }

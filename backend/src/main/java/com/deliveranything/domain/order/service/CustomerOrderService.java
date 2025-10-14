@@ -19,6 +19,7 @@ import com.deliveranything.global.util.CursorUtil;
 import com.deliveranything.global.util.PointUtil;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -79,11 +80,16 @@ public class CustomerOrderService {
 
     boolean hasNext = orders.size() > size;
 
-    return new CursorPageResponse<>(
-        orderResponses,
-        hasNext ? orderResponses.getLast().id().toString() : null,
-        hasNext
-    );
+    try {
+      OrderResponse lastResponse = orderResponses.getLast();
+      return new CursorPageResponse<>(
+          orderResponses,
+          hasNext ? CursorUtil.encode(lastResponse.createdAt(), lastResponse.id()) : null,
+          hasNext
+      );
+    } catch (NoSuchElementException e) {
+      return new CursorPageResponse<>(orderResponses, null, hasNext);
+    }
   }
 
   @Transactional(readOnly = true)
@@ -131,12 +137,16 @@ public class CustomerOrderService {
         .toList();
 
     boolean hasNext = cursorOrders.size() > size;
-    OrderResponse lastResponse = cursorResponses.getLast();
 
-    return new CursorPageResponse<>(
-        cursorResponses,
-        hasNext ? CursorUtil.encode(lastResponse.createdAt(), lastResponse.id()) : null,
-        hasNext
-    );
+    try {
+      OrderResponse lastResponse = cursorResponses.getLast();
+      return new CursorPageResponse<>(
+          cursorResponses,
+          hasNext ? CursorUtil.encode(lastResponse.createdAt(), lastResponse.id()) : null,
+          hasNext
+      );
+    } catch (NoSuchElementException e) {
+      return new CursorPageResponse<>(cursorResponses, null, hasNext);
+    }
   }
 }

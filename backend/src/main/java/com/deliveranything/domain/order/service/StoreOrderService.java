@@ -14,6 +14,7 @@ import com.deliveranything.global.exception.ErrorCode;
 import com.deliveranything.global.util.CursorUtil;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -58,13 +59,17 @@ public class StoreOrderService {
         .toList();
 
     boolean hasNext = cursorOrders.size() > size;
-    OrderResponse lastResponse = cursorResponses.getLast();
 
-    return new CursorPageResponse<>(
-        cursorResponses,
-        hasNext ? CursorUtil.encode(lastResponse.createdAt(), lastResponse.id()) : null,
-        hasNext
-    );
+    try {
+      OrderResponse lastResponse = cursorResponses.getLast();
+      return new CursorPageResponse<>(
+          cursorResponses,
+          hasNext ? CursorUtil.encode(lastResponse.createdAt(), lastResponse.id()) : null,
+          hasNext
+      );
+    } catch (NoSuchElementException e) {
+      return new CursorPageResponse<>(cursorResponses, null, hasNext);
+    }
   }
 
   // 들어온 주문 중 수락 or 거절 해야하는 목록 조회
