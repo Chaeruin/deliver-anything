@@ -8,6 +8,7 @@ import com.deliveranything.domain.user.user.repository.UserRepository;
 import com.deliveranything.global.exception.CustomException;
 import com.deliveranything.global.exception.ErrorCode;
 import com.deliveranything.global.security.auth.SecurityUser;
+import jakarta.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -29,6 +30,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -56,72 +58,82 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
     registration.interceptors(new ChannelInterceptor() {
+
       @Override
-      public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+      public Message<?> preSend(@Nonnull Message<?> message, @Nonnull MessageChannel channel) {
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-          String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
+        StompCommand command = Optional.ofNullable(MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
+            .map(StompHeaderAccessor::getCommand)
+            .orElse(null);
 
-          if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String accessToken = authorizationHeader.substring(7);
+        if (command == null) {
+          // CONNECT/SUBSCRIBE/SEND가 아닌 경우 처리하지 않음
+          return message;
+        }
 
-            try {
-              // 블랙리스트 체크
-              if (tokenBlacklistService.isBlacklisted(accessToken)) {
-                throw new CustomException(ErrorCode.TOKEN_INVALID);
-              }
+        // 인증이 필요한 명령
+        if (command == StompCommand.CONNECT || command == StompCommand.SEND || command == StompCommand.SUBSCRIBE) {
+          StompHeaderAccessor accessor = Optional.ofNullable(MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
+              .orElseThrow(() -> new MessageDeliveryException("StompHeaderAccessor is null"));
 
-              // 토큰 유효성 및 만료 여부 체크
-              if (!authTokenService.isValidToken(accessToken) || authTokenService.isTokenExpired(accessToken)) {
-                throw new CustomException(ErrorCode.TOKEN_INVALID);
-              }
-
-              // 페이로드에서 사용자 ID 추출
-              Map<String, Object> payload = authTokenService.payload(accessToken);
-              if (payload == null || !payload.containsKey("id")) {
-                throw new CustomException(ErrorCode.TOKEN_INVALID);
-              }
-              Long userId = Long.parseLong(String.valueOf(payload.get("id")));
-
-              // 사용자 정보 조회
-              User user = userRepository.findByIdWithProfile(userId)
-                  .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-              // Authentication 객체 생성 및 설정 (CustomAuthenticationFilter와 동일)
-              Collection<? extends GrantedAuthority> authorities = userAuthorityProvider.getAuthorities(user);
-
-              UserDetails securityUser = new SecurityUser(
-                  user.getId(),
-                  user.getUsername(),
-                  "", // password (not used for JWT auth)
-                  user.getEmail(),
-                  user.getCurrentActiveProfile(),
-                  authorities
-              );
-
-              Authentication authentication = new UsernamePasswordAuthenticationToken(
-                  securityUser,
-                  null,
-                  securityUser.getAuthorities()
-              );
-
-              accessor.setUser(authentication);
-            } catch (CustomException e) {
-              System.err.println("WebSocket Auth Error: " + e.getMessage());
-              throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
-            } catch (Exception e) {
-              System.err.println("Unexpected WebSocket Auth Error: " + e.getMessage());
-              throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
-            }
-          }
-          else {
-            System.err.println("Missing or malformed Authorization header for WebSocket CONNECT.");
-            throw new MessageDeliveryException("Unauthorized: Missing or malformed token.");
-          }
+          Authentication authentication = authenticate(accessor);
+          accessor.setUser(authentication);
         }
 
         return message;
+      }
+
+      private Authentication authenticate(StompHeaderAccessor accessor) {
+        String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+          throw new MessageDeliveryException("Unauthorized: Missing or malformed token.");
+        }
+
+        String accessToken = authorizationHeader.substring(7);
+
+        try {
+          // 블랙리스트 체크
+          if (tokenBlacklistService.isBlacklisted(accessToken)) {
+            throw new CustomException(ErrorCode.TOKEN_INVALID);
+          }
+
+          // 토큰 유효성 및 만료 여부 체크
+          if (!authTokenService.isValidToken(accessToken) || authTokenService.isTokenExpired(accessToken)) {
+            throw new CustomException(ErrorCode.TOKEN_INVALID);
+          }
+
+          // 페이로드에서 사용자 ID 추출
+          Map<String, Object> payload = authTokenService.payload(accessToken);
+          if (payload == null || !payload.containsKey("id")) {
+            throw new CustomException(ErrorCode.TOKEN_INVALID);
+          }
+
+          Long userId = Long.parseLong(String.valueOf(payload.get("id")));
+
+          // 사용자 정보 조회
+          User user = userRepository.findByIdWithProfile(userId)
+              .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+          // Authentication 객체 생성
+          Collection<? extends GrantedAuthority> authorities = userAuthorityProvider.getAuthorities(user);
+          UserDetails securityUser = new SecurityUser(
+              user.getId(),
+              user.getUsername(),
+              "",
+              user.getEmail(),
+              user.getCurrentActiveProfile(),
+              authorities
+          );
+
+          return new UsernamePasswordAuthenticationToken(securityUser, null, authorities);
+
+        } catch (CustomException e) {
+          System.err.println("WebSocket Auth Error: " + e.getMessage());
+          throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
+        } catch (Exception e) {
+          System.err.println("Unexpected WebSocket Auth Error: " + e.getMessage());
+          throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
+        }
       }
     });
   }
