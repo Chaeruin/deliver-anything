@@ -221,11 +221,12 @@ public class UserController {
   )
   public ResponseEntity<ApiResponse<SwitchProfileResponse>> switchProfile(
       @Valid @RequestBody SwitchProfileRequest request,
-      @RequestHeader("Authorization") String authorization) {
+      @RequestHeader("Authorization") String authorization,
+      @RequestHeader("User-Agent") String deviceId) { // deviceId 추가
 
     User currentUser = rq.getActor();
-    log.info("프로필 전환 요청: userId={}, targetProfile={}",
-        currentUser.getId(), request.targetProfileType());
+    log.info("프로필 전환 요청: userId={}, targetProfile={}, deviceId={}", // 로그 추가
+        currentUser.getId(), request.targetProfileType(), deviceId);
 
     // 기존 Access Token 추출
     String oldAccessToken = authorization.replace("Bearer ", "");
@@ -234,7 +235,8 @@ public class UserController {
     SwitchProfileResponse result = authService.switchProfileWithTokenReissue(
         currentUser.getId(),
         request.targetProfileType(),
-        oldAccessToken // 기존 토큰 전달
+        oldAccessToken, // 기존 토큰 전달
+        deviceId // deviceId 전달
     );
 
     // 새 Access Token을 쿠키와 헤더에 설정

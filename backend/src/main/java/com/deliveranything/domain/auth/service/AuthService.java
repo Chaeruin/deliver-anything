@@ -236,7 +236,8 @@ public class AuthService {
   public SwitchProfileResponse switchProfileWithTokenReissue(
       Long userId,
       ProfileType targetProfileType,
-      String oldAccessToken) {
+      String oldAccessToken,
+      String deviceId) {
 
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -292,7 +293,7 @@ public class AuthService {
     }
 
     // 프로필 전환 수행 (User 객체로 전달)
-    boolean switched = profileService.switchProfile(user, targetProfileType);
+    boolean switched = profileService.switchProfile(user, targetProfileType, deviceId);
 
     if (!switched) {
       log.error("프로필 전환 실패: userId={}, targetProfile={}", userId, targetProfileType);
