@@ -104,6 +104,7 @@ public class SecurityConfig {
     // 허용할 오리진 목록
     configuration.setAllowedOriginPatterns(List.of(
         "http://localhost:*",
+        "https://localhost:*",
         "https://www.deliver-anything.shop",
         "https://api.deliver-anything.shop"
     ));
