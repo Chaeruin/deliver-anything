@@ -222,7 +222,7 @@ public class UserController {
   public ResponseEntity<ApiResponse<SwitchProfileResponse>> switchProfile(
       @Valid @RequestBody SwitchProfileRequest request,
       @RequestHeader("Authorization") String authorization,
-      @RequestHeader("User-Agent") String deviceId) { // deviceId 추가
+      @RequestHeader("X-Device-ID") String deviceId) { // deviceId 추가
 
     User currentUser = rq.getActor();
     log.info("프로필 전환 요청: userId={}, targetProfile={}, deviceId={}", // 로그 추가

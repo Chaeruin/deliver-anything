@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,14 +42,21 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
 
     // 토큰 발급
     String accessToken = tokenService.genAccessToken(actor);
-    String deviceInfo = request.getHeader("User-Agent");
-    String refreshToken = tokenService.genRefreshToken(actor, deviceInfo);
+
+    // 디바이스 ID 처리
+    String deviceId = request.getHeader("X-Device-ID");
+    if (deviceId == null || deviceId.isBlank()) {
+      deviceId = UUID.randomUUID().toString();
+      response.addHeader("X-Device-ID", deviceId);
+      log.info("신규 OAuth2 기기, X-Device-ID 발급: {}", deviceId);
+    }
+    String refreshToken = tokenService.genRefreshToken(actor, deviceId);
 
     // 쿠키 설정
     rq.setAccessToken(accessToken);         // 헤더만
     rq.setRefreshToken(refreshToken);       // 쿠키만
 
-    log.info("OAuth2 로그인 성공: userId={}", userId);
+    log.info("OAuth2_로그인_성공: userId={}", userId);
 
     // 프로필 존재 여부에 따라 리다이렉트
     if (!actor.hasActiveProfile()) {  // 메서드명 변경
