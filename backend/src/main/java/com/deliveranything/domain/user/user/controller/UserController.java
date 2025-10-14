@@ -5,6 +5,7 @@ import com.deliveranything.domain.user.profile.dto.AvailableProfilesResponse;
 import com.deliveranything.domain.user.profile.dto.CreateProfileRequest;
 import com.deliveranything.domain.user.profile.dto.ProfileResponse;
 import com.deliveranything.domain.user.profile.dto.SwitchProfileRequest;
+import com.deliveranything.domain.auth.dto.SwitchProfileResult;
 import com.deliveranything.domain.user.profile.dto.SwitchProfileResponse;
 import com.deliveranything.domain.user.profile.dto.customer.CustomerProfileCreateData;
 import com.deliveranything.domain.user.profile.dto.rider.RiderProfileCreateData;
@@ -232,7 +233,7 @@ public class UserController {
     String oldAccessToken = authorization.replace("Bearer ", "");
 
     // AuthService가 프로필 전환 + 토큰 재발급 + storeId + 프로필 상세 조회
-    SwitchProfileResponse result = authService.switchProfileWithTokenReissue(
+    SwitchProfileResult switchResult = authService.switchProfileWithTokenReissue(
         currentUser.getId(),
         request.targetProfileType(),
         oldAccessToken, // 기존 토큰 전달
@@ -240,13 +241,13 @@ public class UserController {
     );
 
     // 새 Access Token을 쿠키와 헤더에 설정
-    rq.setAccessToken(result.accessToken());
+    rq.setAccessToken(switchResult.accessToken());
 
     log.info("프로필 전환 완료 및 Access Token 재발급: userId={}, {} -> {}",
-        currentUser.getId(), result.previousProfileType(), result.currentProfileType());
+        currentUser.getId(), switchResult.switchProfileResponse().previousProfileType(), switchResult.switchProfileResponse().currentProfileType());
 
     // storeId + 프로필 상세 정보 포함된 API 응답용으로 변환 (토큰 제거)
-    SwitchProfileResponse response = result.toResponse();
+    SwitchProfileResponse response = switchResult.switchProfileResponse().toResponse();
 
     return ResponseEntity.ok(
         ApiResponse.success("프로필이 전환되었습니다.", response)

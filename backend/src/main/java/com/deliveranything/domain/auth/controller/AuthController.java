@@ -2,7 +2,6 @@ package com.deliveranything.domain.auth.controller;
 
 import com.deliveranything.domain.auth.dto.LoginRequest;
 import com.deliveranything.domain.auth.dto.LoginResponse;
-import com.deliveranything.domain.auth.dto.RefreshTokenRequest;
 import com.deliveranything.domain.auth.dto.SignupRequest;
 import com.deliveranything.domain.auth.dto.SignupResponse;
 import com.deliveranything.domain.auth.service.AuthService;
@@ -161,15 +160,17 @@ public class AuthController {
   @PostMapping("/refresh")
   @Operation(
       summary = "토큰 재발급",
-      description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다."
+      description = "HttpOnly 쿠키에 저장된 Refresh Token을 사용하여 새로운 Access Token을 발급받습니다."
   )
-  public ResponseEntity<ApiResponse<Void>> refreshToken(
-      @Valid @RequestBody RefreshTokenRequest request) {
+  public ResponseEntity<ApiResponse<Void>> refreshToken() {
 
     log.info("Access Token 재발급 요청");
 
+    // HttpOnly 쿠키에서 Refresh Token 추출
+    String refreshToken = rq.getRefreshTokenFromCookie();
+
     // TokenService를 통해 새 Access Token 발급
-    String newAccessToken = tokenService.refreshAccessToken(request.refreshToken());
+    String newAccessToken = tokenService.refreshAccessToken(refreshToken);
 
     // 쿠키 + 응답 헤더에도 설정
     rq.setAccessToken(newAccessToken);
