@@ -138,8 +138,6 @@ springdoc:
 logging:
   level:
     com.back: DEBUG                                     # 패키지 로그 레벨
-    com.deliveranything: INFO                           # 애플리케이션 로그
-    com.deliveranything.global.config.VirtualThreadConfig: INFO  # Virtual Thread 설정 로그
     org.hibernate.SQL: DEBUG                            # SQL 로그 출력
     org.hibernate.orm.jdbc.bind: TRACE                  # SQL 바인딩 로그 (파라미터 값)
     org.hibernate.orm.jdbc.extract: TRACE               # SQL 결과 추출 로그
