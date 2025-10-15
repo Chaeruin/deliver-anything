@@ -47,10 +47,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
+    registry.setErrorHandler(stompErrorHandler);
     registry.addEndpoint("/ws")
         .setAllowedOriginPatterns("*")
-        .withSockJS()
-        .setErrorHandler(stompErrorHandler);
+        .withSockJS();
   }
 
   @Override
@@ -73,13 +73,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         StompCommand command = accessor.getCommand();
 
         if (StompCommand.CONNECT.equals(command)) {
+          log.debug("STOMP CONNECT command received. SessionId: {}", accessor.getSessionId());
+          String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
+          log.debug("Authorization Header: {}", authorizationHeader);
+
           // CONNECT 명령에 대해서만 전체 토큰 인증을 수행합니다.
           Authentication authentication = authenticate(accessor);
           accessor.setUser(authentication);
+          log.debug("User authenticated for CONNECT. Principal: {}, Authenticated: {}", authentication.getPrincipal(), authentication.isAuthenticated());
         } else if (StompCommand.SEND.equals(command) || StompCommand.SUBSCRIBE.equals(command)) {
+          log.debug("STOMP {} command received. SessionId: {}, Destination: {}", command, accessor.getSessionId(), accessor.getDestination());
           // SEND/SUBSCRIBE의 경우, 세션에서 기존 인증 정보를 가져옵니다.
           Authentication authentication = (Authentication) accessor.getUser();
+          log.debug("Retrieved Authentication for {}. Principal: {}, Authenticated: {}", command, authentication != null ? authentication.getPrincipal() : "N/A", authentication != null ? authentication.isAuthenticated() : "N/A");
+
           if (authentication == null || !authentication.isAuthenticated()) {
+            log.warn("Unauthorized: No active authenticated session for {} command. SessionId: {}", command, accessor.getSessionId());
             throw new MessageDeliveryException("Unauthorized: No active authenticated session.");
           }
           // 이미 인증된 세션이므로 추가적인 authenticate 호출은 필요 없습니다.
@@ -141,7 +150,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         } catch (Exception e) {
           log.error("Unexpected WebSocket Auth Error: {}", e.getMessage(), e);
           // Wrap generic exceptions in CustomException for consistent error handling
-          throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Unauthorized: " + e.getMessage());
+          throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
       }
     });

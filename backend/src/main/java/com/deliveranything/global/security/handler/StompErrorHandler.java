@@ -1,6 +1,7 @@
 package com.deliveranything.global.security.handler;
 
 import com.deliveranything.global.exception.CustomException;
+import com.deliveranything.global.exception.ErrorCode; // New import
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -67,8 +68,8 @@ public class StompErrorHandler extends StompSubProtocolErrorHandler {
         accessor.setMessage("Access Denied: " + ex.getMessage());
         accessor.setLeaveMutable(true);
 
-        accessor.addNativeHeader("error-code", ex.getMessage());
-        accessor.addNativeHeader("error-message", "Access Denied: You do not have permission to perform this action.");
+        accessor.addNativeHeader("error-code", ErrorCode.ACCESS_DENIED.getCode());
+        accessor.addNativeHeader("error-message", ErrorCode.ACCESS_DENIED.getMessage());
 
         Optional.of(StompHeaderAccessor.wrap(clientMessage)).map(StompHeaderAccessor::getDestination)
                 .ifPresent(destination -> accessor.addNativeHeader("destination", destination));
@@ -84,8 +85,8 @@ public class StompErrorHandler extends StompSubProtocolErrorHandler {
         accessor.setMessage("Internal Server Error");
         accessor.setLeaveMutable(true);
 
-        accessor.addNativeHeader("error-code", ex.getMessage());
-        accessor.addNativeHeader("error-message", "An unexpected error occurred.");
+        accessor.addNativeHeader("error-code", ErrorCode.INTERNAL_SERVER_ERROR.getCode());
+        accessor.addNativeHeader("error-message", ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
 
         Optional.of(StompHeaderAccessor.wrap(clientMessage)).map(StompHeaderAccessor::getDestination)
                 .ifPresent(destination -> accessor.addNativeHeader("destination", destination));
