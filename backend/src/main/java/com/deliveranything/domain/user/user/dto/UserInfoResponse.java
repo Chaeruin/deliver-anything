@@ -1,6 +1,6 @@
 package com.deliveranything.domain.user.user.dto;
 
-import com.deliveranything.domain.auth.enums.SocialProvider;
+import com.deliveranything.domain.auth.auth.enums.SocialProvider;
 import com.deliveranything.domain.user.profile.enums.ProfileType;
 import com.deliveranything.domain.user.user.entity.User;
 import java.time.LocalDateTime;

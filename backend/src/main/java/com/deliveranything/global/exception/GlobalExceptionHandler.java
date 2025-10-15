@@ -1,12 +1,7 @@
 package com.deliveranything.global.exception;
 
 import com.deliveranything.global.common.ApiResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,23 +9,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
-  private final ObjectMapper objectMapper;
-
   @ExceptionHandler(CustomException.class)
-  public Object handleCustomException(CustomException e, HttpServletRequest request) {
+  public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
     log.info(e.getMessage(), e);
-
-    if (isSseRequest(request)) {
-      return createSseErrorResponse(e.getCode(), e.getMessage());
-    }
-
     ApiResponse<Void> response = ApiResponse.fail(
         e.getCode(),
         e.getMessage()
@@ -46,13 +32,8 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(AccessDeniedException.class)
-  public Object handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
+  public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException e) {
     log.warn("handleAccessDeniedException", e);
-
-    if (isSseRequest(request)) {
-      return createSseErrorResponse("AUTH-403", "접근 권한이 없습니다");
-    }
-
     ApiResponse<Void> response = ApiResponse.fail(
         "AUTH-403",
         "접근 권한이 없습니다"
@@ -61,40 +42,16 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(Exception.class)
-  public Object handleException(Exception e, HttpServletRequest request) {
+  public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
     log.error("Unhandled exception caught", e);
 
+    // e.getMessage()가 null일 수도 있으니 기본 메시지 설정
     String message = e.getMessage() != null ? e.getMessage() : "서버 내부 오류가 발생하였습니다.";
-
-    if (isSseRequest(request)) {
-      return createSseErrorResponse("SERVER-500", message);
-    }
 
     ApiResponse<Void> response = ApiResponse.fail(
         "SERVER-500",
         message
     );
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-  }
-
-  private boolean isSseRequest(HttpServletRequest request) {
-    String acceptHeader = request.getHeader("Accept");
-    return acceptHeader != null && acceptHeader.contains("text/event-stream");
-  }
-
-  private SseEmitter createSseErrorResponse(String code, String message) {
-    SseEmitter emitter = new SseEmitter();
-    try {
-      String jsonError = objectMapper.writeValueAsString(Map.of(
-          "code", code,
-          "message", message
-      ));
-      emitter.send(SseEmitter.event().name("error").data(jsonError));
-      emitter.complete();
-    } catch (IOException ex) {
-      log.error("Error while sending SSE error response", ex);
-      emitter.completeWithError(ex);
-    }
-    return emitter;
   }
 }
