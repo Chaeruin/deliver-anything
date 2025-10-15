@@ -8,10 +8,12 @@ import com.deliveranything.domain.order.repository.OrderRepository;
 import com.deliveranything.global.exception.CustomException;
 import com.deliveranything.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PaymentOrderService {
@@ -21,6 +23,8 @@ public class PaymentOrderService {
 
   @Transactional
   public void payOrder(String merchantUid, String paymentKey) {
+    log.info("고객의 결제 시도 - 주문 번호: {} & PG 사 결제 키: {}", merchantUid, paymentKey);
+
     Order order = getOrderByMerchantId(merchantUid);
     order.isPayable();
 
