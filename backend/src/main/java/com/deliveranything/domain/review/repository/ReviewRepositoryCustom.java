@@ -11,7 +11,7 @@ public interface ReviewRepositoryCustom {
   List<Review> findReviewsByProfile(Long profileId, ProfileType profileType,
       MyReviewSortType sort, String[] cursor, int pageSize);
 
-  void updateLikeCount(Long reviewId, int likeCount);
+  int updateLikeCount(Long reviewId, int likeCount);
 
   List<Review> getStoreReviews(Long storeId, StoreReviewSortType sort, String[] decodedCursor,
       int size);
