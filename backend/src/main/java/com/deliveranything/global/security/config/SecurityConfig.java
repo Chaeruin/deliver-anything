@@ -72,9 +72,14 @@ public class SecurityConfig {
             .requestMatchers("/ws/**").permitAll()
 
             // 인증/인가 관련 (로그인, 회원가입, 소셜 로그인, 토큰 재발급 등)
-            .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/v1/auth/signup", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
-            .requestMatchers("/api/v1/auth/verification/send", "/api/v1/auth/verification/verify").permitAll()
+            .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/v1/auth/signup",
+                "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
+            .requestMatchers("/api/v1/auth/verification/send", "/api/v1/auth/verification/verify")
+            .permitAll()
             .requestMatchers("/api/v1/auth/logout", "/api/v1/auth/logout/all").authenticated()
+
+            // 비밀번호 까먹은 사람이 이메일 인증을 통한 비밀번호 재설정 (인증 불필요)
+            .requestMatchers("/api/v1/auth/password/reset/**").permitAll()
 
             // Actuator
             .requestMatchers("/actuator/**").permitAll()

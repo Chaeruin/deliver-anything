@@ -1,8 +1,8 @@
 package com.deliveranything.global.security.service;
 
-import com.deliveranything.domain.auth.enums.SocialProvider;
-import com.deliveranything.domain.auth.service.AuthService;
-import com.deliveranything.domain.auth.service.UserAuthorityProvider;
+import com.deliveranything.domain.auth.auth.enums.SocialProvider;
+import com.deliveranything.domain.auth.auth.service.AuthService;
+import com.deliveranything.domain.auth.auth.service.UserAuthorityProvider;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.global.security.auth.SecurityUser;
 import java.util.Map;
@@ -72,7 +72,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
       default -> throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인: " + providerTypeCode);
     }
 
-    // 4. SocialProvider enum 변환
+    // 4. SocialProvider enums 변환
     SocialProvider socialProvider = SocialProvider.valueOf(providerTypeCode);
 
     // 5. 회원가입 또는 로그인 처리 (프로필 생성 없이 User만)

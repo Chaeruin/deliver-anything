@@ -100,6 +100,9 @@ dependencies {
     // --- AWS ---
     implementation("software.amazon.awssdk:s3")
 
+    // --- Email ---
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
     // --- Test ---
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

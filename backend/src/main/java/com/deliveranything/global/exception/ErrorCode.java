@@ -29,6 +29,7 @@ public enum ErrorCode {
   USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER-404", "사용자를 찾을 수 없습니다."),
   USER_EMAIL_ALREADY_EXIST(HttpStatus.CONFLICT, "USER-409", "이미 존재하는 이메일 입니다."),
   USER_PHONE_ALREADY_EXIST(HttpStatus.CONFLICT, "USER-409", "이미 존재하는 핸드폰 번호 입니다."),
+  USER_EMAIL_MISMATCH(HttpStatus.FORBIDDEN, "USER-403", "인증 요청 이메일이 현재 로그인된 계정과 일치하지 않습니다."),
 
   // 프로필 관련 오류
   PROFILE_REQUIRED(HttpStatus.FORBIDDEN, "PROFILE-403", "프로필이 필요합니다. 프로필을 생성해주세요."),
