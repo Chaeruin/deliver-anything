@@ -79,16 +79,18 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
 
 
   @Override
-  public void updateLikeCount(Long reviewId, int likeCount) {
+  public int updateLikeCount(Long reviewId, int likeCount) {
     QReview review = QReview.review;
 
-    queryFactory.update(review)
+    long updatedRows = queryFactory.update(review)
         .set(review.likeCount, likeCount)
         .where(review.id.eq(reviewId))
         .execute();
+
+    return (int) updatedRows;
   }
 
-  @Override
+    @Override
   public List<Review> getStoreReviews(Long storeId, StoreReviewSortType sort,
       String[] decodedCursor, int pageSize) {
     QReview review = QReview.review;

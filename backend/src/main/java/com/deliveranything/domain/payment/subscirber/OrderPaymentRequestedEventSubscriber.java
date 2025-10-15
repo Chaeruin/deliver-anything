@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -35,7 +34,7 @@ public class OrderPaymentRequestedEventSubscriber implements MessageListener {
     try {
       event = objectMapper.readValue(new String(message.getBody()),
           OrderPaymentRequestedEvent.class);
-      paymentService.createPayment(event.merchantUid(),event.amount());
+      paymentService.createPayment(event.paymentKey(), event.merchantUid(), event.amount());
       paymentService.confirmPayment(event.paymentKey(), event.merchantUid(), event.amount());
     } catch (CustomException e) {
       if (event != null) {

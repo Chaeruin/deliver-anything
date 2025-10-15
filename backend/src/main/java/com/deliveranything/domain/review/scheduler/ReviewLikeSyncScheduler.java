@@ -1,6 +1,8 @@
 package com.deliveranything.domain.review.scheduler;
 
 import com.deliveranything.domain.review.dto.ReviewLikeEvent;
+import com.deliveranything.domain.review.dto.ReviewResponse;
+import com.deliveranything.domain.review.repository.ReviewRepository;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -15,12 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewLikeSyncScheduler {
 
   private final RedisTemplate<String, Object> redisTemplate;
-  private final KafkaTemplate<String, Object> kafkaTemplate;
+  private final ReviewRepository reviewRepository;
 
   public ReviewLikeSyncScheduler(RedisTemplate<String, Object> redisTemplate,
-      KafkaTemplate<String, Object> kafkaTemplate) {
+      ReviewRepository reviewRepository) {
     this.redisTemplate = redisTemplate;
-    this.kafkaTemplate = kafkaTemplate;
+    this.reviewRepository = reviewRepository;
   }
 
   @Scheduled(fixedRate = 5 * 60 * 1000)
@@ -32,22 +34,25 @@ public class ReviewLikeSyncScheduler {
     Set<ZSetOperations.TypedTuple<Object>> tuples =
         redisTemplate.opsForZSet().rangeWithScores(reviewSortedKey, 0, -1);
 
-    if (tuples != null) {
-      for (ZSetOperations.TypedTuple<Object> tuple : tuples) {
-        Long reviewId = (Long) tuple.getValue();
-        Double score = tuple.getScore();
+    for (ZSetOperations.TypedTuple<Object> tuple : tuples) {
+      Long reviewId = (Long) tuple.getValue();
+      Double score = tuple.getScore();
 
-        if (score == null) {
-          log.warn("리뷰 {}: 좋아요 score가 없습니다.", reviewId);
-          continue;
-        }
-        int likeCount = score.intValue();
+      if (reviewId == null || score == null) {
+        log.warn("잘못된 리뷰 좋아요 데이터: value={}, score={}", reviewId, score);
+        continue;
+      }
 
-        ReviewLikeEvent event = new ReviewLikeEvent(reviewId, likeCount);
-        kafkaTemplate.send("review-like-topic", reviewId.toString(), event);
-        log.info("리뷰 {}: 좋아요 수 이벤트 발행 -> {}", reviewId, likeCount);
+      int likeCount = score.intValue();
+
+      // DB 업데이트
+      int updated = reviewRepository.updateLikeCount(reviewId, likeCount);
+
+      if (updated > 0) {
+        log.info("리뷰 {} 좋아요 수 {}로 DB 반영 완료", reviewId, likeCount);
+      } else {
+        log.warn("리뷰 {}를 DB에서 찾을 수 없어 업데이트 실패", reviewId);
       }
     }
   }
-
 }

@@ -31,12 +31,6 @@ public class Payment extends BaseEntity {
   @Column(nullable = false)
   private PaymentStatus status;
 
-  public Payment(String merchantUid, Long amount) {
-    this.merchantUid = merchantUid;
-    this.amount = amount;
-    this.status = PaymentStatus.READY;
-  }
-
   public Payment(String merchantUid, String paymentKey, Long amount, PaymentStatus status) {
     this.merchantUid = merchantUid;
     this.paymentKey = paymentKey;
