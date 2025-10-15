@@ -1,7 +1,7 @@
 package com.deliveranything.domain.auth.service;
 
-import com.deliveranything.domain.auth.enums.SocialProvider;
 import com.deliveranything.domain.auth.dto.SwitchProfileResult;
+import com.deliveranything.domain.auth.enums.SocialProvider;
 import com.deliveranything.domain.store.store.service.StoreService;
 import com.deliveranything.domain.user.profile.dto.SwitchProfileResponse;
 import com.deliveranything.domain.user.profile.dto.customer.CustomerProfileDetail;
@@ -36,7 +36,8 @@ public class AuthService {
   private final UserRepository userRepository;
   private final ProfileRepository profileRepository;
 
-  private final TokenService tokenService;
+  private final RefreshTokenService refreshTokenService;
+  private final AccessTokenService accessTokenService;
   private final ProfileService profileService;
   private final TokenBlacklistService tokenBlacklistService;
   private final StoreService storeService;
@@ -140,8 +141,8 @@ public class AuthService {
     log.info("로그인 성공: userId={}, email={}", user.getId(), email);
 
     // 토큰 발급
-    String accessToken = tokenService.genAccessToken(user);
-    String refreshToken = tokenService.genRefreshToken(user, deviceInfo);
+    String accessToken = accessTokenService.genAccessToken(user);
+    String refreshToken = refreshTokenService.genRefreshToken(user, deviceInfo);
 
     // 추가: storeId 조회
     Long storeId = getStoreIdIfSeller(user);
@@ -185,7 +186,7 @@ public class AuthService {
   @Transactional
   public void logout(Long userId, String deviceInfo, String accessToken) {
     // 특정 기기의 Refresh Token 무효화
-    tokenService.invalidateRefreshToken(userId, deviceInfo);
+    refreshTokenService.invalidateRefreshToken(userId, deviceInfo);
     log.info("로그아웃 완료: userId={}, deviceInfo={}", userId, deviceInfo);
 
     // Access Token 블랙리스트 등록
@@ -204,7 +205,7 @@ public class AuthService {
   @Transactional
   public void logoutAll(Long userId, String accessToken) {
     // 모든 기기 리프레시 토큰 무효화
-    tokenService.invalidateAllRefreshTokens(userId);
+    refreshTokenService.invalidateAllRefreshTokens(userId);
     log.info("전체 로그아웃 완료: userId={}", userId);
 
     // 현재 Access Token 블랙리스트 등록 -> 다른 기기들의 Access Token은 자연 만료(직접 추적해서 모두 수동만료 시키려면 JWT의 stateless 장점 사라진다고 생각해서 이렇게 구현 )
@@ -215,6 +216,7 @@ public class AuthService {
       log.info("전체 로그아웃 완료: userId={}", userId);
     }
   }
+
 
   /**
    * 이메일 인증
@@ -233,97 +235,54 @@ public class AuthService {
   /**
    * 프로필 전환 + Access Token 재발급 (Refresh Token 유지)
    */
-    @Transactional
-    public SwitchProfileResult switchProfileWithTokenReissue(
-        Long userId,
-        ProfileType targetProfileType,
-        String oldAccessToken,
-        String deviceId) {
-  
-      User user = userRepository.findById(userId)
-          .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-  
-      // 온보딩 체크 제거 → 프로필 존재 여부로 변경
-      if (!user.hasActiveProfile()) {
-        log.warn("프로필이 없는 사용자입니다: userId={}", userId);
-        throw new CustomException(ErrorCode.PROFILE_REQUIRED);
-      }
-  
-      // 현재 프로필 정보 저장
-      ProfileType previousProfileType = user.getCurrentActiveProfileType();
-      Long previousProfileId = user.getCurrentActiveProfileId();
-  
-      // 타겟 프로필 조회
-      Profile targetProfile = profileRepository
-          .findByUserIdAndType(userId, targetProfileType)
-          .orElseThrow(() -> {
-            log.warn("해당 프로필을 찾을 수 없습니다: userId={}, targetProfile={}",
-                userId, targetProfileType);
-            return new CustomException(ErrorCode.PROFILE_NOT_FOUND);
-          });
-  
-      // 이미 활성화된 프로필인 경우 - Access Token만 재발급
-      if (user.getCurrentActiveProfileType() == targetProfileType) {
-        log.info("이미 활성화된 프로필입니다: userId={}, targetProfile={}",
-            userId, targetProfileType);
-  
-        String newAccessToken = tokenService.genAccessToken(user);
-  
-        // 기존 AccessToken 블랙리스트 등록
-        if (oldAccessToken != null && !oldAccessToken.isEmpty()) {
-          tokenBlacklistService.addToBlacklist(oldAccessToken);
-          log.info("프로필 전환 - 기존 accessToken 블랙리스트 등록: userId={}", userId);
-        }
-  
-        // storeId 조회
-        Long storeId = getStoreIdIfSeller(user);
-  
-        // 프로필 상세 정보 조회
-        Object profileDetail = getCurrentProfileDetail(user);
-  
-        SwitchProfileResponse switchProfileResponse = SwitchProfileResponse.builder()
-            .userId(userId)
-            .previousProfileType(previousProfileType)
-            .previousProfileId(previousProfileId)
-            .currentProfileType(targetProfileType)
-            .currentProfileId(targetProfile.getId())
-            .storeId(storeId)
-            .currentProfileDetail(profileDetail)
-            .build();
-  
-        return new SwitchProfileResult(switchProfileResponse, newAccessToken);
-      }
-  
-      // 프로필 전환 수행 (User 객체로 전달)
-      boolean switched = profileService.switchProfile(user, targetProfileType, deviceId);
-  
-      if (!switched) {
-        log.error("프로필 전환 실패: userId={}, targetProfile={}", userId, targetProfileType);
-        throw new CustomException(ErrorCode.PROFILE_NOT_FOUND);
-      }
-  
-      // 전환된 user로 새 Access Token 생성
-      User updatedUser = userRepository.findById(userId)
-          .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-  
-      // Access Token만 재발급 (Refresh Token 유지)
-      String newAccessToken = tokenService.genAccessToken(updatedUser);
-  
+  @Transactional
+  public SwitchProfileResult switchProfileWithTokenReissue(
+      Long userId,
+      ProfileType targetProfileType,
+      String oldAccessToken,
+      String deviceId) {
+
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+    // 온보딩 체크 제거 → 프로필 존재 여부로 변경
+    if (!user.hasActiveProfile()) {
+      log.warn("프로필이 없는 사용자입니다: userId={}", userId);
+      throw new CustomException(ErrorCode.PROFILE_REQUIRED);
+    }
+
+    // 현재 프로필 정보 저장
+    ProfileType previousProfileType = user.getCurrentActiveProfileType();
+    Long previousProfileId = user.getCurrentActiveProfileId();
+
+    // 타겟 프로필 조회
+    Profile targetProfile = profileRepository
+        .findByUserIdAndType(userId, targetProfileType)
+        .orElseThrow(() -> {
+          log.warn("해당 프로필을 찾을 수 없습니다: userId={}, targetProfile={}",
+              userId, targetProfileType);
+          return new CustomException(ErrorCode.PROFILE_NOT_FOUND);
+        });
+
+    // 이미 활성화된 프로필인 경우 - Access Token만 재발급
+    if (user.getCurrentActiveProfileType() == targetProfileType) {
+      log.info("이미 활성화된 프로필입니다: userId={}, targetProfile={}",
+          userId, targetProfileType);
+
+      String newAccessToken = accessTokenService.genAccessToken(user);
+
       // 기존 AccessToken 블랙리스트 등록
       if (oldAccessToken != null && !oldAccessToken.isEmpty()) {
         tokenBlacklistService.addToBlacklist(oldAccessToken);
-        log.info("프로필 전환 완료 및 기존 accessToken 블랙리스트 등록: userId={}", userId);
+        log.info("프로필 전환 - 기존 accessToken 블랙리스트 등록: userId={}", userId);
       }
-  
+
       // storeId 조회
-      Long storeId = getStoreIdIfSeller(updatedUser);
-  
+      Long storeId = getStoreIdIfSeller(user);
+
       // 프로필 상세 정보 조회
-      Object profileDetail = getCurrentProfileDetail(updatedUser);
-  
-      log.info("프로필 전환 완료 및 Access Token 재발급: userId={}, {} -> {}",
-          userId, previousProfileType, targetProfileType);
-  
+      Object profileDetail = getCurrentProfileDetail(user);
+
       SwitchProfileResponse switchProfileResponse = SwitchProfileResponse.builder()
           .userId(userId)
           .previousProfileType(previousProfileType)
@@ -333,9 +292,53 @@ public class AuthService {
           .storeId(storeId)
           .currentProfileDetail(profileDetail)
           .build();
-  
+
       return new SwitchProfileResult(switchProfileResponse, newAccessToken);
     }
+
+    // 프로필 전환 수행 (User 객체로 전달)
+    boolean switched = profileService.switchProfile(user, targetProfileType, deviceId);
+
+    if (!switched) {
+      log.error("프로필 전환 실패: userId={}, targetProfile={}", userId, targetProfileType);
+      throw new CustomException(ErrorCode.PROFILE_NOT_FOUND);
+    }
+
+    // 전환된 user로 새 Access Token 생성
+    User updatedUser = userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+    // Access Token만 재발급 (Refresh Token 유지)
+    String newAccessToken = accessTokenService.genAccessToken(updatedUser);
+
+    // 기존 AccessToken 블랙리스트 등록
+    if (oldAccessToken != null && !oldAccessToken.isEmpty()) {
+      tokenBlacklistService.addToBlacklist(oldAccessToken);
+      log.info("프로필 전환 완료 및 기존 accessToken 블랙리스트 등록: userId={}", userId);
+    }
+
+    // storeId 조회
+    Long storeId = getStoreIdIfSeller(updatedUser);
+
+    // 프로필 상세 정보 조회
+    Object profileDetail = getCurrentProfileDetail(updatedUser);
+
+    log.info("프로필 전환 완료 및 Access Token 재발급: userId={}, {} -> {}",
+        userId, previousProfileType, targetProfileType);
+
+    SwitchProfileResponse switchProfileResponse = SwitchProfileResponse.builder()
+        .userId(userId)
+        .previousProfileType(previousProfileType)
+        .previousProfileId(previousProfileId)
+        .currentProfileType(targetProfileType)
+        .currentProfileId(targetProfile.getId())
+        .storeId(storeId)
+        .currentProfileDetail(profileDetail)
+        .build();
+
+    return new SwitchProfileResult(switchProfileResponse, newAccessToken);
+  }
+
   /**
    * 판매자 프로필인 경우 상점 ID 조회 판매자가 아니거나 상점이 없으면 null 반환
    */

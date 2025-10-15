@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RedisRefreshTokenDto implements Serializable {
+public class RefreshTokenDto implements Serializable {
 
   private Long userId;
   private String tokenValue;

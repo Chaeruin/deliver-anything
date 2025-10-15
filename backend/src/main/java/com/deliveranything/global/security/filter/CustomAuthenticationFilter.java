@@ -1,6 +1,6 @@
 package com.deliveranything.global.security.filter;
 
-import com.deliveranything.domain.auth.service.AuthTokenService;
+import com.deliveranything.domain.auth.service.AccessTokenService;
 import com.deliveranything.domain.auth.service.TokenBlacklistService;
 import com.deliveranything.domain.auth.service.UserAuthorityProvider;
 import com.deliveranything.domain.user.user.entity.User;
@@ -32,7 +32,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
   private final UserRepository userRepository;
-  private final AuthTokenService authTokenService;
+  private final AccessTokenService accessTokenService;
   private final UserAuthorityProvider userAuthorityProvider;
   private final TokenBlacklistService tokenBlacklistService;
   private final ObjectMapper objectMapper;
@@ -82,12 +82,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
       throw new CustomException(ErrorCode.TOKEN_INVALID);
     }
 
-    if (!authTokenService.isValidToken(accessToken) || authTokenService.isTokenExpired(
+    if (!accessTokenService.isValidToken(accessToken) || accessTokenService.isTokenExpired(
         accessToken)) {
       return null;
     }
 
-    Map<String, Object> payload = authTokenService.payload(accessToken);
+    Map<String, Object> payload = accessTokenService.payload(accessToken);
     if (payload == null) {
       return null;
     }

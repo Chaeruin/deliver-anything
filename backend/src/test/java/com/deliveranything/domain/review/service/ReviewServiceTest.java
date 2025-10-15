@@ -105,7 +105,7 @@ class ReviewServiceTest {
     reviewCreateRequest = new ReviewCreateRequest(
         5,
         "test comment",
-        new String[] {"Url1", "Url2"},
+        new String[]{"Url1", "Url2"},
         ReviewTargetType.STORE,
         2L
     );
@@ -124,7 +124,7 @@ class ReviewServiceTest {
     assertThat(response.id()).isEqualTo(10L);
     assertThat(response.photoUrls()).containsExactlyInAnyOrder("Url1", "Url2");
 
-    verify(customerProfileService).getProfile(11L);
+    verify(customerProfileService).getProfileByUserId(11L);
     verify(reviewRepository).save(any());
     verify(reviewPhotoRepository).saveAll(any());
     verify(redisTemplate).opsForHash();
@@ -161,10 +161,11 @@ class ReviewServiceTest {
     // 테스트용 작성자 ID
     User otherUser = createUserForTest(22L);
     Profile otherProfile = createProfileForTest(otherUser, 22L);
-    CustomerProfile otherCustomerProfile = createCustomerProfileForTest(otherProfile, otherUser, 22L);
+    CustomerProfile otherCustomerProfile = createCustomerProfileForTest(otherProfile, otherUser,
+        22L);
 
     when(reviewRepository.findById(response.id())).thenReturn(Optional.of(review));
-    when(customerProfileService.getProfile(22L)).thenReturn(otherCustomerProfile);
+    when(customerProfileService.getProfileByUserId(22L)).thenReturn(otherCustomerProfile);
 
     // 작성자가 아닌 경우 deleteReview 호출 시 예외 발생 확인
     assertThrows(CustomException.class, () -> reviewService.deleteReview(22L, response.id()));
@@ -178,7 +179,7 @@ class ReviewServiceTest {
     Review review = createReviewForTest(0);
 
     //리뷰 수정 dto 생성
-    ReviewUpdateRequest request = new ReviewUpdateRequest(3, "Bad", new String[] {"Url5", "Url6"});
+    ReviewUpdateRequest request = new ReviewUpdateRequest(3, "Bad", new String[]{"Url5", "Url6"});
 
     when(reviewRepository.findById(response.id())).thenReturn(Optional.of(review));
     when(userService.findById(11L)).thenReturn(user);
@@ -205,19 +206,21 @@ class ReviewServiceTest {
     ReviewCreateResponse response = createReviewResponseForTest(11L);
     Review review = createReviewForTest(0);
 
-    ReviewUpdateRequest request = new ReviewUpdateRequest(3, "Bad", new String[] {"Url5", "Url6"});
+    ReviewUpdateRequest request = new ReviewUpdateRequest(3, "Bad", new String[]{"Url5", "Url6"});
 
     // 테스트용 작성자 ID
     User otherUser = createUserForTest(22L);
     Profile otherProfile = createProfileForTest(otherUser, 22L);
-    CustomerProfile otherCustomerProfile = createCustomerProfileForTest(otherProfile, otherUser, 22L);
+    CustomerProfile otherCustomerProfile = createCustomerProfileForTest(otherProfile, otherUser,
+        22L);
 
     when(reviewRepository.findById(response.id())).thenReturn(Optional.of(review));
     when(userService.findById(22L)).thenReturn(otherUser);
-    when(customerProfileService.getProfile(22L)).thenReturn(otherCustomerProfile);
+    when(customerProfileService.getProfileByUserId(22L)).thenReturn(otherCustomerProfile);
 
     // 작성자가 아닌 경우 updateReview 호출 시 예외 발생 확인
-    assertThrows(CustomException.class, () -> reviewService.updateReview(request, 22L, response.id()));
+    assertThrows(CustomException.class,
+        () -> reviewService.updateReview(request, 22L, response.id()));
   }
 
   @Test
@@ -285,7 +288,7 @@ class ReviewServiceTest {
     assertThat(response.reviews().content().get(0).likeCount()).isEqualTo(10L);
 
     verify(reviewRepository).getStoreReviews(eq(STORE_ID), eq(SORT_TYPE), any(), eq(SIZE));
-    verify(setOperations, times(SIZE+1)).size(anyString());
+    verify(setOperations, times(SIZE + 1)).size(anyString());
   }
 
   @Test
@@ -412,7 +415,8 @@ class ReviewServiceTest {
     assertThat(response.reviews().nextPageToken()).isNotNull();
     assertThat(response.reviews().content().get(0).likeCount()).isEqualTo(10L);
 
-    verify(reviewRepository).findReviewsByProfile(eq(PROFILE_ID), eq(ProfileType.CUSTOMER), eq(MyReviewSortType.LATEST), any(), eq(SIZE));
+    verify(reviewRepository).findReviewsByProfile(eq(PROFILE_ID), eq(ProfileType.CUSTOMER),
+        eq(MyReviewSortType.LATEST), any(), eq(SIZE));
     verify(setOperations, times(SIZE + 1)).size(anyString());
     verify(profileMock).getType();
     verify(profileMock).getId();
@@ -465,7 +469,8 @@ class ReviewServiceTest {
     assertThat(response.reviews().nextPageToken()).isNotNull();
     assertThat(response.reviews().content().get(0).likeCount()).isEqualTo(10L);
 
-    verify(reviewRepository).findReviewsByProfile(eq(PROFILE_ID), eq(ProfileType.SELLER), eq(MyReviewSortType.LATEST), any(), eq(SIZE));
+    verify(reviewRepository).findReviewsByProfile(eq(PROFILE_ID), eq(ProfileType.SELLER),
+        eq(MyReviewSortType.LATEST), any(), eq(SIZE));
     verify(setOperations, times(SIZE + 1)).size(anyString());
     verify(profileMock).getType();
     verify(profileMock).getId();
@@ -518,7 +523,8 @@ class ReviewServiceTest {
     assertThat(response.reviews().nextPageToken()).isNotNull();
     assertThat(response.reviews().content().get(0).likeCount()).isEqualTo(10L);
 
-    verify(reviewRepository).findReviewsByProfile(eq(PROFILE_ID), eq(ProfileType.RIDER), eq(MyReviewSortType.LATEST), any(), eq(SIZE));
+    verify(reviewRepository).findReviewsByProfile(eq(PROFILE_ID), eq(ProfileType.RIDER),
+        eq(MyReviewSortType.LATEST), any(), eq(SIZE));
     verify(setOperations, times(SIZE + 1)).size(anyString());
     verify(profileMock).getType();
     verify(profileMock).getId();
@@ -527,7 +533,7 @@ class ReviewServiceTest {
 
   //====================================================
   private ReviewCreateResponse createReviewResponseForTest(Long profileId) throws Exception {
-    when(customerProfileService.getProfile(profileId)).thenReturn(customerProfile);
+    when(customerProfileService.getProfileByUserId(profileId)).thenReturn(customerProfile);
     when(redisTemplate.opsForHash()).thenReturn(hashOperations);
     when(reviewRepository.save(any())).thenAnswer(invocation -> {
       Review r = invocation.getArgument(0);
@@ -550,9 +556,9 @@ class ReviewServiceTest {
     reviewIdField.setAccessible(true);
     reviewIdField.set(review, 10L + i);
 
-      Field likeCountField = Review.class.getDeclaredField("likeCount");
-      likeCountField.setAccessible(true);
-      likeCountField.set(review, 5);
+    Field likeCountField = Review.class.getDeclaredField("likeCount");
+    likeCountField.setAccessible(true);
+    likeCountField.set(review, 5);
 
     return review;
   }
@@ -585,7 +591,8 @@ class ReviewServiceTest {
     return profile;
   }
 
-  private CustomerProfile createCustomerProfileForTest(Profile profile, User user, Long i) throws Exception {
+  private CustomerProfile createCustomerProfileForTest(Profile profile, User user, Long i)
+      throws Exception {
     CustomerProfile customerProfile = CustomerProfile.builder()
         .customerPhoneNumber("010-1234-5678")
         .profileImageUrl("Url3")
@@ -602,4 +609,4 @@ class ReviewServiceTest {
 
     return customerProfile;
   }
-  }
+}

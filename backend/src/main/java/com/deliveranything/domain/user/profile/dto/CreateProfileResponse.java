@@ -7,7 +7,7 @@ import lombok.Builder;
  * 프로필 생성 응답
  */
 @Builder
-public record ProfileResponse(
+public record CreateProfileResponse(
     Long userId,
     ProfileType profileType,
     Long profileId,
@@ -15,4 +15,5 @@ public record ProfileResponse(
     boolean isActive,
     String message
 ) {
+
 }

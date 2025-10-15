@@ -1,6 +1,6 @@
 package com.deliveranything.global.config;
 
-import com.deliveranything.domain.auth.service.AuthTokenService;
+import com.deliveranything.domain.auth.service.AccessTokenService;
 import com.deliveranything.domain.auth.service.TokenBlacklistService;
 import com.deliveranything.domain.auth.service.UserAuthorityProvider;
 import com.deliveranything.domain.user.user.entity.User;
@@ -9,6 +9,9 @@ import com.deliveranything.global.exception.CustomException;
 import com.deliveranything.global.exception.ErrorCode;
 import com.deliveranything.global.security.auth.SecurityUser;
 import jakarta.annotation.Nonnull;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -28,16 +31,12 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-  private final AuthTokenService authTokenService;
+  private final AccessTokenService accessTokenService;
   private final TokenBlacklistService tokenBlacklistService;
   private final UserRepository userRepository;
   private final UserAuthorityProvider userAuthorityProvider;
@@ -62,7 +61,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
       @Override
       public Message<?> preSend(@Nonnull Message<?> message, @Nonnull MessageChannel channel) {
 
-        StompCommand command = Optional.ofNullable(MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
+        StompCommand command = Optional.ofNullable(
+                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
             .map(StompHeaderAccessor::getCommand)
             .orElse(null);
 
@@ -72,8 +72,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
 
         // 인증이 필요한 명령
-        if (command == StompCommand.CONNECT || command == StompCommand.SEND || command == StompCommand.SUBSCRIBE) {
-          StompHeaderAccessor accessor = Optional.ofNullable(MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
+        if (command == StompCommand.CONNECT || command == StompCommand.SEND
+            || command == StompCommand.SUBSCRIBE) {
+          StompHeaderAccessor accessor = Optional.ofNullable(
+                  MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
               .orElseThrow(() -> new MessageDeliveryException("StompHeaderAccessor is null"));
 
           Authentication authentication = authenticate(accessor);
@@ -98,12 +100,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
           }
 
           // 토큰 유효성 및 만료 여부 체크
-          if (!authTokenService.isValidToken(accessToken) || authTokenService.isTokenExpired(accessToken)) {
+          if (!accessTokenService.isValidToken(accessToken) || accessTokenService.isTokenExpired(
+              accessToken)) {
             throw new CustomException(ErrorCode.TOKEN_INVALID);
           }
 
           // 페이로드에서 사용자 ID 추출
-          Map<String, Object> payload = authTokenService.payload(accessToken);
+          Map<String, Object> payload = accessTokenService.payload(accessToken);
           if (payload == null || !payload.containsKey("id")) {
             throw new CustomException(ErrorCode.TOKEN_INVALID);
           }
@@ -115,7 +118,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
               .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
           // Authentication 객체 생성
-          Collection<? extends GrantedAuthority> authorities = userAuthorityProvider.getAuthorities(user);
+          Collection<? extends GrantedAuthority> authorities = userAuthorityProvider.getAuthorities(
+              user);
           UserDetails securityUser = new SecurityUser(
               user.getId(),
               user.getUsername(),

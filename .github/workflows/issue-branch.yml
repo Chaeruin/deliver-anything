@@ -37,8 +37,8 @@ jobs:
           NUM="${{ github.event.issue.number }}"
 
           # type(scope): summary 형식에서 type/scope 추출
-          TYPE=$(echo "$TITLE" | sed -nE 's/^(feat|fix|refactor|docs|chore|hotfix)\((fe|be|infra)\):.*/\1/p')
-          SCOPE=$(echo "$TITLE" | sed -nE 's/^(feat|fix|refactor|docs|chore|hotfix)\((fe|be|infra)\):.*/\2/p')
+          TYPE=$(echo "$TITLE" | sed -nE 's/^(feat|fix|refactor|docs|chore|hotfix|test)\((fe|be|infra)\):.*/\1/p')
+          SCOPE=$(echo "$TITLE" | sed -nE 's/^(feat|fix|refactor|docs|chore|hotfix|test)\((fe|be|infra)\):.*/\2/p')
 
           # 기본값 보정
           [ -z "$TYPE" ] && TYPE="chore"
