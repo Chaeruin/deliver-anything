@@ -1,7 +1,7 @@
 package com.deliveranything.global.security.handler;
 
-import com.deliveranything.domain.auth.service.AccessTokenService;
-import com.deliveranything.domain.auth.service.RefreshTokenService;
+import com.deliveranything.domain.auth.auth.service.AccessTokenService;
+import com.deliveranything.domain.auth.auth.service.RefreshTokenService;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.global.common.Rq;
 import com.deliveranything.global.security.auth.SecurityUser;

@@ -11,9 +11,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.deliveranything.domain.auth.service.AccessTokenService;
-import com.deliveranything.domain.auth.service.TokenBlacklistService;
-import com.deliveranything.domain.auth.service.UserAuthorityProvider;
+import com.deliveranything.domain.auth.auth.service.AccessTokenService;
+import com.deliveranything.domain.auth.auth.service.TokenBlacklistService;
+import com.deliveranything.domain.auth.auth.service.UserAuthorityProvider;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.domain.user.user.repository.UserRepository;
 import com.deliveranything.global.security.auth.SecurityUser;

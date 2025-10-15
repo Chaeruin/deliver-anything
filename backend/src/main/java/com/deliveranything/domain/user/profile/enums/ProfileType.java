@@ -1,7 +1,7 @@
 package com.deliveranything.domain.user.profile.enums;
 
 /**
- * 프로필 타입 enum
+ * 프로필 타입 enums
  */
 public enum ProfileType {
   CUSTOMER("소비자"),

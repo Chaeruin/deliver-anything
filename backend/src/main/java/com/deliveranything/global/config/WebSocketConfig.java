@@ -1,8 +1,8 @@
 package com.deliveranything.global.config;
 
-import com.deliveranything.domain.auth.service.AccessTokenService;
-import com.deliveranything.domain.auth.service.TokenBlacklistService;
-import com.deliveranything.domain.auth.service.UserAuthorityProvider;
+import com.deliveranything.domain.auth.auth.service.AccessTokenService;
+import com.deliveranything.domain.auth.auth.service.TokenBlacklistService;
+import com.deliveranything.domain.auth.auth.service.UserAuthorityProvider;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.domain.user.user.repository.UserRepository;
 import com.deliveranything.global.exception.CustomException;
@@ -12,7 +12,9 @@ import jakarta.annotation.Nonnull;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import com.deliveranything.global.security.handler.StompErrorHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -31,6 +33,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+@Slf4j
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
@@ -40,9 +43,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   private final TokenBlacklistService tokenBlacklistService;
   private final UserRepository userRepository;
   private final UserAuthorityProvider userAuthorityProvider;
+  private final StompErrorHandler stompErrorHandler;
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
+    registry.setErrorHandler(stompErrorHandler);
     registry.addEndpoint("/ws")
         .setAllowedOriginPatterns("*")
         .withSockJS();
@@ -61,26 +66,34 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
       @Override
       public Message<?> preSend(@Nonnull Message<?> message, @Nonnull MessageChannel channel) {
 
-        StompCommand command = Optional.ofNullable(
+        StompHeaderAccessor accessor = Optional.ofNullable(
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
-            .map(StompHeaderAccessor::getCommand)
-            .orElse(null);
+            .orElseThrow(() -> new MessageDeliveryException("StompHeaderAccessor is null"));
 
-        if (command == null) {
-          // CONNECT/SUBSCRIBE/SEND가 아닌 경우 처리하지 않음
-          return message;
-        }
+        StompCommand command = accessor.getCommand();
 
-        // 인증이 필요한 명령
-        if (command == StompCommand.CONNECT || command == StompCommand.SEND
-            || command == StompCommand.SUBSCRIBE) {
-          StompHeaderAccessor accessor = Optional.ofNullable(
-                  MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
-              .orElseThrow(() -> new MessageDeliveryException("StompHeaderAccessor is null"));
+        if (StompCommand.CONNECT.equals(command)) {
+          log.debug("STOMP CONNECT command received. SessionId: {}", accessor.getSessionId());
+          String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
+          log.debug("Authorization Header: {}", authorizationHeader);
 
+          // CONNECT 명령에 대해서만 전체 토큰 인증을 수행합니다.
           Authentication authentication = authenticate(accessor);
           accessor.setUser(authentication);
+          log.debug("User authenticated for CONNECT. Principal: {}, Authenticated: {}", authentication.getPrincipal(), authentication.isAuthenticated());
+        } else if (StompCommand.SEND.equals(command) || StompCommand.SUBSCRIBE.equals(command)) {
+          log.debug("STOMP {} command received. SessionId: {}, Destination: {}", command, accessor.getSessionId(), accessor.getDestination());
+          // SEND/SUBSCRIBE의 경우, 세션에서 기존 인증 정보를 가져옵니다.
+          Authentication authentication = (Authentication) accessor.getUser();
+          log.debug("Retrieved Authentication for {}. Principal: {}, Authenticated: {}", command, authentication != null ? authentication.getPrincipal() : "N/A", authentication != null ? authentication.isAuthenticated() : "N/A");
+
+          if (authentication == null || !authentication.isAuthenticated()) {
+            log.warn("Unauthorized: No active authenticated session for {} command. SessionId: {}", command, accessor.getSessionId());
+            throw new MessageDeliveryException("Unauthorized: No active authenticated session.");
+          }
+          // 이미 인증된 세션이므로 추가적인 authenticate 호출은 필요 없습니다.
         }
+        // 다른 명령 (예: DISCONNECT)은 특별한 처리 없이 메시지를 반환합니다.
 
         return message;
       }
@@ -132,11 +145,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
           return new UsernamePasswordAuthenticationToken(securityUser, null, authorities);
 
         } catch (CustomException e) {
-          System.err.println("WebSocket Auth Error: " + e.getMessage());
-          throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
+          log.error("WebSocket Auth Error: {}", e.getMessage(), e);
+          throw e; // Throw CustomException directly
         } catch (Exception e) {
-          System.err.println("Unexpected WebSocket Auth Error: " + e.getMessage());
-          throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
+          log.error("Unexpected WebSocket Auth Error: {}", e.getMessage(), e);
+          // Wrap generic exceptions in CustomException for consistent error handling
+          throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
       }
     });

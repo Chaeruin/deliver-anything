@@ -29,7 +29,7 @@ public class NotificationService {
         .build();
 
     notificationRepository.save(notification);
-    broadcastToEmitters(profileId, notification, "notification");
+    broadcastToEmitters(profileId, notification, notification.getType().name());
 
     return notification;
   }

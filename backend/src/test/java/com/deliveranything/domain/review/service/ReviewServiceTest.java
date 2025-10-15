@@ -13,7 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.deliveranything.domain.auth.enums.SocialProvider;
+import com.deliveranything.domain.auth.auth.enums.SocialProvider;
 import com.deliveranything.domain.notification.enums.NotificationType;
 import com.deliveranything.domain.notification.repository.NotificationRepository;
 import com.deliveranything.domain.review.dto.ReviewCreateRequest;
