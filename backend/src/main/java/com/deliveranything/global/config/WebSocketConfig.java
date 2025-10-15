@@ -61,26 +61,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
       @Override
       public Message<?> preSend(@Nonnull Message<?> message, @Nonnull MessageChannel channel) {
 
-        StompCommand command = Optional.ofNullable(
+        StompHeaderAccessor accessor = Optional.ofNullable(
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
-            .map(StompHeaderAccessor::getCommand)
-            .orElse(null);
+            .orElseThrow(() -> new MessageDeliveryException("StompHeaderAccessor is null"));
 
-        if (command == null) {
-          // CONNECT/SUBSCRIBE/SEND가 아닌 경우 처리하지 않음
-          return message;
-        }
+        StompCommand command = accessor.getCommand();
 
-        // 인증이 필요한 명령
-        if (command == StompCommand.CONNECT || command == StompCommand.SEND
-            || command == StompCommand.SUBSCRIBE) {
-          StompHeaderAccessor accessor = Optional.ofNullable(
-                  MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class))
-              .orElseThrow(() -> new MessageDeliveryException("StompHeaderAccessor is null"));
-
+        if (StompCommand.CONNECT.equals(command)) {
+          // CONNECT 명령에 대해서만 전체 토큰 인증을 수행합니다.
           Authentication authentication = authenticate(accessor);
           accessor.setUser(authentication);
+        } else if (StompCommand.SEND.equals(command) || StompCommand.SUBSCRIBE.equals(command)) {
+          // SEND/SUBSCRIBE의 경우, 세션에서 기존 인증 정보를 가져옵니다.
+          Authentication authentication = (Authentication) accessor.getUser();
+          if (authentication == null || !authentication.isAuthenticated()) {
+            throw new MessageDeliveryException("Unauthorized: No active authenticated session.");
+          }
+          // 이미 인증된 세션이므로 추가적인 authenticate 호출은 필요 없습니다.
         }
+        // 다른 명령 (예: DISCONNECT)은 특별한 처리 없이 메시지를 반환합니다.
 
         return message;
       }
