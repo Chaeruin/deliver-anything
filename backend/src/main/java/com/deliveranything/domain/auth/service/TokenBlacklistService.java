@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class TokenBlacklistService {
 
   private final RedisTemplate<String, String> redisTemplate;
-  private final AuthTokenService authTokenService;
+  private final AccessTokenService accessTokenService;
 
   private static final String BLACKLIST_PREFIX = "token:blacklist:";
 
@@ -22,7 +22,7 @@ public class TokenBlacklistService {
   public void addToBlacklist(String accessToken) {
     try {
       // 토큰 만료까지 남은 시간 계산
-      long expirationTime = authTokenService.getExpirationTime(accessToken);
+      long expirationTime = accessTokenService.getExpirationTime(accessToken);
       long now = System.currentTimeMillis();
       long ttl = expirationTime - now;
 

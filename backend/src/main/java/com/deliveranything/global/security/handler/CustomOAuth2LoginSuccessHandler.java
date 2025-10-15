@@ -1,6 +1,7 @@
 package com.deliveranything.global.security.handler;
 
-import com.deliveranything.domain.auth.service.TokenService;
+import com.deliveranything.domain.auth.service.AccessTokenService;
+import com.deliveranything.domain.auth.service.RefreshTokenService;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.global.common.Rq;
 import com.deliveranything.global.security.auth.SecurityUser;
@@ -22,7 +23,8 @@ import org.springframework.stereotype.Component;
 public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
   private final Rq rq;
-  private final TokenService tokenService;
+  private final AccessTokenService accessTokenService;
+  private final RefreshTokenService refreshTokenService;
 
   @Value("${custom.frontend.url}")
   private String frontendUrl;
@@ -41,7 +43,7 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
     User actor = rq.getActor();
 
     // 토큰 발급
-    String accessToken = tokenService.genAccessToken(actor);
+    String accessToken = accessTokenService.genAccessToken(actor);
 
     // 디바이스 ID 처리
     String deviceId = request.getHeader("X-Device-ID");
@@ -50,7 +52,7 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
       response.addHeader("X-Device-ID", deviceId);
       log.info("신규 OAuth2 기기, X-Device-ID 발급: {}", deviceId);
     }
-    String refreshToken = tokenService.genRefreshToken(actor, deviceId);
+    String refreshToken = refreshTokenService.genRefreshToken(actor, deviceId);
 
     // 쿠키 설정
     rq.setAccessToken(accessToken);         // 헤더만

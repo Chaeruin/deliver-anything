@@ -1,5 +1,6 @@
 package com.deliveranything.domain.auth.service;
 
+import com.deliveranything.domain.user.profile.entity.Profile;
 import com.deliveranything.domain.user.profile.enums.ProfileType;
 import com.deliveranything.domain.user.user.entity.User;
 import io.jsonwebtoken.Claims;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class AuthTokenService {
+public class AccessTokenService {
 
   @Value("${custom.jwt.secretKey}")
   private String jwtSecretKey;
@@ -32,9 +33,16 @@ public class AuthTokenService {
     long id = user.getId();
     String username = user.getUsername();
 
+    Profile activeProfile = user.getCurrentActiveProfile();
+
     // 멀티 프로필 정보 (이제 전역 고유 Profile ID)
-    ProfileType currentActiveProfileType = user.getCurrentActiveProfileType();
-    Long currentActiveProfileId = user.getCurrentActiveProfileId(); // 전역 고유 ID
+    ProfileType currentActiveProfileType = null;
+    Long currentActiveProfileId = null;
+
+    if (activeProfile != null) {
+      currentActiveProfileType = activeProfile.getType(); // Profile.getType() 호출
+      currentActiveProfileId = activeProfile.getId(); // Profile.getId() 호출
+    }
 
     ClaimsBuilder claimsBuilder = Jwts.claims();
 
@@ -43,7 +51,7 @@ public class AuthTokenService {
     claimsBuilder.add("name", username);
     claimsBuilder.add("currentActiveProfile",
         currentActiveProfileType != null ? currentActiveProfileType.name() : null);
-    claimsBuilder.add("currentActiveProfileId", currentActiveProfileId);
+    claimsBuilder.add("currentActiveProfileId", currentActiveProfileId); // null 가능
 
     Claims claims = claimsBuilder.build();
 

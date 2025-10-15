@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Seller Profile", description = "판매자 프로필 관리 API")
+@Tag(name = "판매자 프로필 관리 API", description = "seller profile 관련 API")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/users/me/seller")

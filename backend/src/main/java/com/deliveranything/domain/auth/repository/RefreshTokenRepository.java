@@ -1,6 +1,6 @@
 package com.deliveranything.domain.auth.repository;
 
-import com.deliveranything.domain.auth.dto.RedisRefreshTokenDto;
+import com.deliveranything.domain.auth.dto.RefreshTokenDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 import java.util.Set;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-public class RedisRefreshTokenRepository {
+public class RefreshTokenRepository {
 
   private final RedisTemplate<String, Object> redisTemplate;
   private final ObjectMapper objectMapper;
@@ -28,8 +28,8 @@ public class RedisRefreshTokenRepository {
   /**
    * Refresh Token 저장 (14일 TTL)
    */
-  public void save(RedisRefreshTokenDto token) {
-    String key = RedisRefreshTokenDto.generateKey(token.getUserId(), token.getDeviceInfo());
+  public void save(RefreshTokenDto token) {
+    String key = RefreshTokenDto.generateKey(token.getUserId(), token.getDeviceInfo());
 
     // 1. 토큰 데이터 저장
     redisTemplate.opsForValue().set(key, token, refreshTokenExpirationDays, TimeUnit.DAYS);
@@ -45,7 +45,7 @@ public class RedisRefreshTokenRepository {
   /**
    * 토큰 값으로 조회
    */
-  public Optional<RedisRefreshTokenDto> findByTokenValue(String tokenValue) {
+  public Optional<RefreshTokenDto> findByTokenValue(String tokenValue) {
     // 1. 인덱스로 키 찾기
     String indexKey = TOKEN_INDEX_PREFIX + tokenValue;
     String key = (String) redisTemplate.opsForValue().get(indexKey);
@@ -59,20 +59,20 @@ public class RedisRefreshTokenRepository {
     if (data == null) {
       return Optional.empty();
     }
-    RedisRefreshTokenDto token = objectMapper.convertValue(data, RedisRefreshTokenDto.class);
+    RefreshTokenDto token = objectMapper.convertValue(data, RefreshTokenDto.class);
     return Optional.ofNullable(token);
   }
 
   /**
    * 사용자 + 디바이스로 조회
    */
-  public Optional<RedisRefreshTokenDto> findByUserAndDevice(Long userId, String deviceInfo) {
-    String key = RedisRefreshTokenDto.generateKey(userId, deviceInfo);
+  public Optional<RefreshTokenDto> findByUserAndDevice(Long userId, String deviceInfo) {
+    String key = RefreshTokenDto.generateKey(userId, deviceInfo);
     Object data = redisTemplate.opsForValue().get(key);
     if (data == null) {
       return Optional.empty();
     }
-    RedisRefreshTokenDto token = objectMapper.convertValue(data, RedisRefreshTokenDto.class);
+    RefreshTokenDto token = objectMapper.convertValue(data, RefreshTokenDto.class);
     return Optional.ofNullable(token);
   }
 
@@ -81,7 +81,7 @@ public class RedisRefreshTokenRepository {
    */
   public void deleteByUserAndDevice(Long userId, String deviceInfo) {
     findByUserAndDevice(userId, deviceInfo).ifPresent(token -> {
-      String key = RedisRefreshTokenDto.generateKey(userId, deviceInfo);
+      String key = RefreshTokenDto.generateKey(userId, deviceInfo);
       String indexKey = TOKEN_INDEX_PREFIX + token.getTokenValue();
 
       redisTemplate.delete(key);
@@ -103,7 +103,7 @@ public class RedisRefreshTokenRepository {
       keys.forEach(key -> {
         Object data = redisTemplate.opsForValue().get(key);
         if (data != null) {
-          RedisRefreshTokenDto token = objectMapper.convertValue(data, RedisRefreshTokenDto.class);
+          RefreshTokenDto token = objectMapper.convertValue(data, RefreshTokenDto.class);
           String indexKey = TOKEN_INDEX_PREFIX + token.getTokenValue();
           redisTemplate.delete(indexKey);
         }

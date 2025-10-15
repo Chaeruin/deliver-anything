@@ -5,12 +5,14 @@ import com.deliveranything.domain.auth.dto.LoginResponse;
 import com.deliveranything.domain.auth.dto.SignupRequest;
 import com.deliveranything.domain.auth.dto.SignupResponse;
 import com.deliveranything.domain.auth.service.AuthService;
-import com.deliveranything.domain.auth.service.TokenService;
+import com.deliveranything.domain.auth.service.RefreshTokenService;
 import com.deliveranything.domain.user.profile.enums.ProfileType;
 import com.deliveranything.domain.user.profile.service.ProfileService;
 import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.global.common.ApiResponse;
 import com.deliveranything.global.common.Rq;
+import com.deliveranything.global.exception.CustomException;
+import com.deliveranything.global.exception.ErrorCode;
 import com.deliveranything.global.security.auth.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Auth", description = "인증/인가 API")
+@Tag(name = "인증/인가 API", description = "auth 관련 API")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -37,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthService authService;
-  private final TokenService tokenService;
+  private final RefreshTokenService refreshTokenService;
   private final ProfileService profileService;
   private final Rq rq;
 
@@ -122,18 +124,20 @@ public class AuthController {
   public ResponseEntity<ApiResponse<Void>> logout(
       @AuthenticationPrincipal SecurityUser securityUser,
       @RequestHeader("Authorization") String authorization,
-      @RequestHeader("X-Device-ID") String deviceId
+      @RequestHeader(value = "User-Agent", required = false) String userAgent
   ) {
     // Bearer 접두사 제거
     String accessToken = authorization.replace("Bearer ", "");
 
+    String deviceInfo = userAgent != null ? userAgent : "unknown";
+
     //  accessToken 파라미터 전달
-    authService.logout(securityUser.getId(), deviceId, accessToken);
+    authService.logout(securityUser.getId(), deviceInfo, accessToken);
 
     // 쿠키 삭제
     rq.deleteRefreshToken();
 
-    log.info("로그아웃 완료: userId={}, deviceId={}", securityUser.getId(), deviceId);
+    log.info("로그아웃 완료: userId={}, deviceInfo={}", securityUser.getId(), deviceInfo);
 
     return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다.", null));
   }
@@ -170,12 +174,20 @@ public class AuthController {
     // HttpOnly 쿠키에서 Refresh Token 추출
     String refreshToken = rq.getRefreshTokenFromCookie();
 
-    // TokenService를 통해 새 Access Token 발급
-    String newAccessToken = tokenService.refreshAccessToken(refreshToken);
+    if (refreshToken == null || refreshToken.isBlank()) {
+      log.warn("Refresh Token이 쿠키에 존재하지 않습니다.");
+      throw new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+    }
+
+    String oldAccessToken = rq.getAccessTokenFromHeader();
+    String newAccessToken = refreshTokenService.refreshAccessToken(
+        refreshToken,
+        oldAccessToken
+    );
 
     // 쿠키 + 응답 헤더에도 설정
     rq.setAccessToken(newAccessToken);
 
-    return ResponseEntity.ok(ApiResponse.success());
+    return ResponseEntity.ok(ApiResponse.success("토큰이 재발급되었습니다.", null));
   }
 }

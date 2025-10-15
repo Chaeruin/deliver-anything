@@ -61,16 +61,8 @@ public class ReviewService {
   /* 리뷰 생성 */
   public ReviewCreateResponse createReview(ReviewCreateRequest request, Long userId) {
     log.info("리뷰 생성 요청 - userId: {}, request: {}", userId, request);
-    /***
-     *  2025-09-29 수정 사항 - daran2
-     *  유저를 통해 프로필을 받아오는 방식 -> 프로필을 받고 프로필에서 커스터머 프로필을 받아오는 방식으로 변경
-     *  이유: 유저가 여러 프로필을 가질 수 있기 때문에, 변경된 프로필 구조에선 유저를 통해 커스터머 프로필을 바로 받아오는 것은 부적절
-     *
-     *  2025 09-29 수정2 - daran2
-     *  customerProfileService에 getProfile(userId) 메서드를 이용해 더 간결하게 변경!
-     ***/
     //커스터머 프로필 존재 여부 확인
-    CustomerProfile customerProfile = customerProfileService.getProfile(userId);
+    CustomerProfile customerProfile = customerProfileService.getProfileByUserId(userId);
 
     //리뷰 생성 및 저장
     Review review = Review.from(request, customerProfile);
@@ -370,7 +362,7 @@ public class ReviewService {
   /* 리뷰 권한 확인 (작성자 확인) */
   @Transactional(readOnly = true)
   public boolean verifyReviewAuth(Review review, Long userId) {
-    CustomerProfile customerProfile = customerProfileService.getProfile(
+    CustomerProfile customerProfile = customerProfileService.getProfileByUserId(
         userId); // daran2 - 이렇게 userId로 프로필 조회할 수 있도록 변경했습니당
 
     return review.getCustomerProfile().getId().equals(customerProfile.getId());

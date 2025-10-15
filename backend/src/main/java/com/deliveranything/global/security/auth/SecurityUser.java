@@ -44,7 +44,7 @@ public class SecurityUser extends User implements OAuth2User {
   }
 
   // Rq에서 쓰일 일반 유저네임을 위한 게터 추가
-  public String getUserName() {
+  public String getRealName() {
     return this.name;
   }
 
