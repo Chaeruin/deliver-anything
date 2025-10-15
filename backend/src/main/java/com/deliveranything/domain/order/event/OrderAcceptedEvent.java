@@ -7,6 +7,8 @@ import java.util.List;
 public record OrderAcceptedEvent(
     String orderId,
     List<OrderItemInfo> orderItems,
+    Long sellerId,
+    Long storeId,
     String storeName,
     Double storeLon,
     Double storeLat,
@@ -18,6 +20,8 @@ public record OrderAcceptedEvent(
     return new OrderAcceptedEvent(
         order.getId().toString(),
         order.getOrderItems().stream().map(OrderItemInfo::fromOrderItem).toList(),
+        order.getStore().getSellerProfileId(),
+        order.getStore().getId(),
         order.getStore().getName(),
         order.getStore().getLocation().getX(),
         order.getStore().getLocation().getY(),

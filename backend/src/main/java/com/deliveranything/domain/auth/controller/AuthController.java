@@ -2,7 +2,6 @@ package com.deliveranything.domain.auth.controller;
 
 import com.deliveranything.domain.auth.dto.LoginRequest;
 import com.deliveranything.domain.auth.dto.LoginResponse;
-import com.deliveranything.domain.auth.dto.RefreshTokenRequest;
 import com.deliveranything.domain.auth.dto.SignupRequest;
 import com.deliveranything.domain.auth.dto.SignupResponse;
 import com.deliveranything.domain.auth.service.AuthService;
@@ -13,12 +12,12 @@ import com.deliveranything.domain.user.user.entity.User;
 import com.deliveranything.global.common.ApiResponse;
 import com.deliveranything.global.common.Rq;
 import com.deliveranything.global.security.auth.SecurityUser;
-import com.deliveranything.global.util.UserAgentUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -40,7 +39,6 @@ public class AuthController {
   private final AuthService authService;
   private final TokenService tokenService;
   private final ProfileService profileService;
-  private final UserAgentUtil userAgentUtil;
   private final Rq rq;
 
   @PostMapping("/signup")
@@ -70,21 +68,29 @@ public class AuthController {
   @PostMapping("/login")
   @Operation(
       summary = "로그인",
-      description = "이메일과 비밀번호로 로그인합니다. Access Token과 Refresh Token이 발급되며, 판매자 프로필인 경우 storeId와 함께 프로필 상세 정보도 반환됩니다."
+      description = "이메일과 비밀번호로 로그인합니다. Access Token과 Refresh Token이 발급됩니다. X-Device-ID 헤더가 없을 경우, 서버에서 생성하여 응답 헤더로 반환합니다."
   )
   public ResponseEntity<ApiResponse<LoginResponse>> login(
       @Valid @RequestBody LoginRequest request,
-      HttpServletRequest httpRequest) {
+      @RequestHeader(value = "X-Device-ID", required = false) String deviceId,
+      HttpServletResponse httpResponse) {
 
-    // User-Agent에서 기기 정보 추출
-    String deviceInfo = userAgentUtil.extractDeviceInfo(httpRequest);
-    log.info("로그인 시도 - 기기 정보: {}", deviceInfo);
+    String finalDeviceId = deviceId;
+    if (finalDeviceId == null || finalDeviceId.isBlank()) {
+      finalDeviceId = UUID.randomUUID().toString();
+      httpResponse.addHeader("X-Device-ID", finalDeviceId);
+      log.info("신규 기기, X-Device-ID 발급: {}", finalDeviceId);
+    }
+
+    log.info("로그인 시도 - 기기 ID: {}", finalDeviceId);
+
+    httpResponse.addHeader("X-Device-ID", finalDeviceId);
 
     // 로그인 처리 (storeId + 프로필 상세 정보 포함)
     AuthService.LoginResult result = authService.login(
         request.email(),
         request.password(),
-        deviceInfo
+        finalDeviceId
     );
 
     User user = result.user();
@@ -116,20 +122,18 @@ public class AuthController {
   public ResponseEntity<ApiResponse<Void>> logout(
       @AuthenticationPrincipal SecurityUser securityUser,
       @RequestHeader("Authorization") String authorization,
-      @RequestHeader(value = "User-Agent", required = false) String userAgent
+      @RequestHeader("X-Device-ID") String deviceId
   ) {
     // Bearer 접두사 제거
     String accessToken = authorization.replace("Bearer ", "");
 
-    String deviceInfo = userAgent != null ? userAgent : "unknown";
-
     //  accessToken 파라미터 전달
-    authService.logout(securityUser.getId(), deviceInfo, accessToken);
+    authService.logout(securityUser.getId(), deviceId, accessToken);
 
     // 쿠키 삭제
     rq.deleteRefreshToken();
 
-    log.info("로그아웃 완료: userId={}, deviceInfo={}", securityUser.getId(), deviceInfo);
+    log.info("로그아웃 완료: userId={}, deviceId={}", securityUser.getId(), deviceId);
 
     return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다.", null));
   }
@@ -157,15 +161,17 @@ public class AuthController {
   @PostMapping("/refresh")
   @Operation(
       summary = "토큰 재발급",
-      description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다."
+      description = "HttpOnly 쿠키에 저장된 Refresh Token을 사용하여 새로운 Access Token을 발급받습니다."
   )
-  public ResponseEntity<ApiResponse<Void>> refreshToken(
-      @Valid @RequestBody RefreshTokenRequest request) {
+  public ResponseEntity<ApiResponse<Void>> refreshToken() {
 
     log.info("Access Token 재발급 요청");
 
+    // HttpOnly 쿠키에서 Refresh Token 추출
+    String refreshToken = rq.getRefreshTokenFromCookie();
+
     // TokenService를 통해 새 Access Token 발급
-    String newAccessToken = tokenService.refreshAccessToken(request.refreshToken());
+    String newAccessToken = tokenService.refreshAccessToken(refreshToken);
 
     // 쿠키 + 응답 헤더에도 설정
     rq.setAccessToken(newAccessToken);

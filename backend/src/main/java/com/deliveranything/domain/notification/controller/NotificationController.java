@@ -33,11 +33,11 @@ public class NotificationController {
   private final NotificationService notificationService;
   private final EmitterRepository emitterRepository;
 
-  @Operation(summary = "SSE 구독", description = "SSE를 통해 실시간 알림을 구독합니다. 각 기기별로 고유한 deviceId를 헤더(User-Agent)에 담아 요청해야 합니다.")
+  @Operation(summary = "SSE 구독", description = "SSE를 통해 실시간 알림을 구독합니다. 각 기기별로 고유한 deviceId를 헤더(X-Device-ID)에 담아 요청해야 합니다.")
   @GetMapping("/stream")
   public SseEmitter subscribe(
       @Parameter(description = "구독하는 기기의 고유 ID", required = true, in = ParameterIn.HEADER)
-      @RequestHeader("User-Agent") String deviceId,
+      @RequestHeader("X-Device-ID") String deviceId,
       @AuthenticationPrincipal SecurityUser securityUser
   ) {
     Long profileId = securityUser.getCurrentActiveProfileIdSafe();

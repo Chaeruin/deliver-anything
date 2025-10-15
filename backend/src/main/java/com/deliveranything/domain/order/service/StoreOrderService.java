@@ -16,10 +16,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class StoreOrderService {
@@ -93,6 +95,12 @@ public class StoreOrderService {
   @Transactional
   public void acceptOrder(Long orderId) {
     Order order = getOrderWithStore(orderId);
+
+    log.info("상점이 주문 수락 했을 때 도착지의 latitude 위도 -90~90: {} / longitude 경도 -180~180: {}",
+        order.getDestination().getY(), order.getDestination().getX());
+    log.info("상점이 주문 수락 했을 때 상점의 latitude 위도 -90~90: {} / longitude 경도 -180~180: {}",
+        order.getStore().getLocation().getY(), order.getStore().getLocation().getX());
+
     eventPublisher.publishEvent(OrderAcceptedEvent.from(order));
   }
 

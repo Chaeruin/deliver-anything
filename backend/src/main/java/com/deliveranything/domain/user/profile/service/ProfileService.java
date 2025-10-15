@@ -9,6 +9,7 @@ import com.deliveranything.domain.user.profile.entity.RiderProfile;
 import com.deliveranything.domain.user.profile.entity.SellerProfile;
 import com.deliveranything.domain.user.profile.enums.ProfileType;
 import com.deliveranything.domain.user.profile.enums.RiderToggleStatus;
+import com.deliveranything.domain.user.profile.event.ActiveProfileChangedEvent;
 import com.deliveranything.domain.user.profile.repository.CustomerProfileRepository;
 import com.deliveranything.domain.user.profile.repository.ProfileRepository;
 import com.deliveranything.domain.user.profile.repository.RiderProfileRepository;
@@ -20,6 +21,7 @@ import com.deliveranything.global.exception.ErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ public class ProfileService {
   private final CustomerProfileRepository customerProfileRepository;
   private final SellerProfileRepository sellerProfileRepository;
   private final RiderProfileRepository riderProfileRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   // ========== 프로필 생성 (온보딩과 추가를 통합함)  ==========
 
@@ -81,12 +84,15 @@ public class ProfileService {
    * 프로필 전환
    */
   @Transactional
-  public boolean switchProfile(User user, ProfileType targetProfile) {
+  public boolean switchProfile(User user, ProfileType targetProfile, String deviceId) { // deviceId 추가
 
     if (!user.hasActiveProfile()) {
       log.warn("프로필이 없는 사용자입니다: userId={}", user.getId());
       throw new CustomException(ErrorCode.PROFILE_REQUIRED);
     }
+
+    // 이전 프로필 ID 저장
+    Long oldProfileId = user.getCurrentActiveProfileId();
 
     Profile targetProfileEntity = profileRepository
         .findByUserIdAndType(user.getId(), targetProfile)
@@ -113,6 +119,11 @@ public class ProfileService {
       userRepository.save(user);
       log.info("프로필 전환 완료: userId={}, newActiveProfile={}, profileId={}",
           user.getId(), targetProfile, targetProfileEntity.getId());
+
+      // 이벤트 발행
+      eventPublisher.publishEvent(
+          new ActiveProfileChangedEvent(oldProfileId, targetProfileEntity.getId(), deviceId));
+
       return true;
     } catch (IllegalStateException e) {
       log.warn("프로필 전환 실패: userId={}, targetProfile={}, error={}",

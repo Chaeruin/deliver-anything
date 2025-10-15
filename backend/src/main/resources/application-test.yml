@@ -10,3 +10,19 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  
+  main:
+    allow-bean-definition-overriding: true
+
+# 테스트용 설정
+kakao:
+  api:
+    key: test-kakao-api-key
+
+gemini:
+  api:
+    key: test-gemini-api-key
+
+custom:
+  refreshToken:
+    expirationDays: 7

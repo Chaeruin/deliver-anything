@@ -44,8 +44,8 @@ public class StockFacadeService {
 
   @Transactional
   public void handleOrderCreated(Long orderId, Long storeId, List<OrderItemInfo> items) {
-    stockCommandService.checkStoreOpen(storeId);
     try {
+      stockCommandService.checkStoreOpen(storeId);
       executeWithRetry(() -> {
         for (var item : items) {
           Stock stock = stockCommandService.getStockForUpdate(storeId, item.productId());

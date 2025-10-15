@@ -14,8 +14,8 @@ public record SwitchProfileResponse(
     ProfileType currentProfileType,
     Long currentProfileId,
     Long storeId,            // 판매자 프로필의 상점 ID (없으면 null)
-    Object currentProfileDetail,  // 추가: 현재 활성 프로필 상세 정보
-    String accessToken      // 내부 전용
+    Object currentProfileDetail  // 추가: 현재 활성 프로필 상세 정보
+
 ) {
 
   // API 응답용 변환 - 토큰 제거
@@ -27,7 +27,7 @@ public record SwitchProfileResponse(
         .currentProfileType(currentProfileType)
         .currentProfileId(currentProfileId)
         .storeId(storeId)
-        .currentProfileDetail(currentProfileDetail)  // 포함
+        .currentProfileDetail(currentProfileDetail)
         .build();
   }
 }

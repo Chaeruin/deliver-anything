@@ -198,6 +198,13 @@ public class Rq {
     setCookie(name, "");
   }
 
+  /**
+   * RefreshToken 쿠키에서 추출
+   */
+  public String getRefreshTokenFromCookie() {
+    return getCookieValue("refreshToken", null);
+  }
+
   // =====================================================================
   // 🔐 JWT 토큰 관련
   // =====================================================================

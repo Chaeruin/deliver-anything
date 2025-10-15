@@ -30,6 +30,8 @@ public class OrderAssignedEventSubscriber implements MessageListener {
   @Override
   public void onMessage(@NonNull Message message, byte[] pattern) {
     try {
+      log.info("라이더에게 상점이 수락한 주문이 뿌려짐");
+      
       OrderAssignedEvent event = objectMapper.readValue(message.getBody(),
           OrderAssignedEvent.class);
       orderService.processOrderTransmitted(event.orderId());

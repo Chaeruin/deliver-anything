@@ -81,4 +81,26 @@ public class EmitterRepository {
     return new ConcurrentHashMap<>(profileEmitters);
   }
 
+  /**
+   * 특정 기기의 Emitter를 한 프로필에서 다른 프로필로 이전
+   *
+   * @param oldProfileId 이전 프로필 ID
+   * @param newProfileId 새 프로필 ID
+   * @param deviceId     기기 ID
+   */
+  public void move(Long oldProfileId, Long newProfileId, String deviceId) {
+    Map<String, SseEmitter> oldDeviceEmitters = profileEmitters.get(oldProfileId);
+    if (oldDeviceEmitters != null) {
+      SseEmitter emitter = oldDeviceEmitters.remove(deviceId);
+      if (emitter != null) {
+        // 이전 프로필에 더 이상 연결된 기기가 없으면 맵에서 제거
+        if (oldDeviceEmitters.isEmpty()) {
+          profileEmitters.remove(oldProfileId);
+        }
+        // 새 프로필에 Emitter 저장
+        save(newProfileId, deviceId, emitter);
+      }
+    }
+  }
+
 }
