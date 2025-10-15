@@ -12,7 +12,9 @@ import jakarta.annotation.Nonnull;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import com.deliveranything.global.security.handler.StompErrorHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -31,6 +33,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+@Slf4j
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
@@ -40,12 +43,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   private final TokenBlacklistService tokenBlacklistService;
   private final UserRepository userRepository;
   private final UserAuthorityProvider userAuthorityProvider;
+  private final StompErrorHandler stompErrorHandler;
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
     registry.addEndpoint("/ws")
         .setAllowedOriginPatterns("*")
-        .withSockJS();
+        .withSockJS()
+        .setErrorHandler(stompErrorHandler);
   }
 
   @Override
@@ -131,11 +136,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
           return new UsernamePasswordAuthenticationToken(securityUser, null, authorities);
 
         } catch (CustomException e) {
-          System.err.println("WebSocket Auth Error: " + e.getMessage());
-          throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
+          log.error("WebSocket Auth Error: {}", e.getMessage(), e);
+          throw e; // Throw CustomException directly
         } catch (Exception e) {
-          System.err.println("Unexpected WebSocket Auth Error: " + e.getMessage());
-          throw new MessageDeliveryException("Unauthorized: " + e.getMessage());
+          log.error("Unexpected WebSocket Auth Error: {}", e.getMessage(), e);
+          // Wrap generic exceptions in CustomException for consistent error handling
+          throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Unauthorized: " + e.getMessage());
         }
       }
     });
