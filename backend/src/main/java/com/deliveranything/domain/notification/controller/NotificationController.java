@@ -45,7 +45,7 @@ public class NotificationController {
       throw new CustomException(ErrorCode.PROFILE_REQUIRED);
     }
 
-    SseEmitter emitter = new SseEmitter(60 * 1000L);
+    SseEmitter emitter = new SseEmitter(0L);
     emitterRepository.save(profileId, deviceId, emitter);
 
     // 연결 종료 시 Emitter 제거
