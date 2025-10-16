@@ -3,6 +3,8 @@ package com.deliveranything.domain.user.user.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -35,6 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -140,6 +144,7 @@ class UserControllerTest {
   @DisplayName("프로필 생성 테스트")
   class CreateProfileTest {
 
+    @MockitoSettings(strictness = Strictness.LENIENT)
     @Test
     @DisplayName("성공 - 프로필 생성")
     void createProfile_success() {
@@ -150,6 +155,9 @@ class UserControllerTest {
       Profile mockProfile = mock(Profile.class);
       when(mockProfile.getId()).thenReturn(10L);
       when(mockProfile.isActive()).thenReturn(true);
+      when(mockProfile.getType()).thenReturn(ProfileType.CUSTOMER);
+      when(mockProfile.getUser()).thenReturn(mockUser);
+      when(mockProfile.getType()).thenReturn(ProfileType.CUSTOMER);
 
       CustomerProfileCreateData profileData = new CustomerProfileCreateData(
           "닉네임", null, "01012345678"
@@ -157,8 +165,20 @@ class UserControllerTest {
 
       CreateProfileRequest request = new CreateProfileRequest(ProfileType.CUSTOMER, profileData);
 
-      when(profileService.createProfile(mockUser, ProfileType.CUSTOMER, profileData))
+      when(profileService.createProfile(eq(mockUser), eq(ProfileType.CUSTOMER), any()))
           .thenReturn(mockProfile);
+
+      when(rq.getDeviceId()).thenReturn("device123");
+      when(rq.getAccessTokenFromHeader()).thenReturn("oldAccessToken");
+
+      SwitchProfileResult switchResult = new SwitchProfileResult(
+          SwitchProfileResponse.builder().build(),
+          "newAccessToken"
+      );
+
+      when(authService.switchProfileWithTokenReissue(
+          any(Long.class), any(ProfileType.class), any(String.class), any(String.class)
+      )).thenReturn(switchResult);
 
       ResponseEntity<ApiResponse<CreateProfileResponse>> response = userController.createProfile(
           request);
