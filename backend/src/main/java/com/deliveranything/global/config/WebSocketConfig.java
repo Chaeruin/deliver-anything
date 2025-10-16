@@ -15,6 +15,7 @@ import java.util.Optional;
 import com.deliveranything.global.security.handler.StompErrorHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -29,6 +30,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -36,6 +38,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Slf4j
 @Configuration
 @EnableWebSocketMessageBroker
+@EnableWebSocketSecurity
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
@@ -154,5 +157,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
       }
     });
+  }
+
+  /**
+   * Disables CSRF for STOMP messages when using @EnableWebSocketSecurity.
+   * This bean name is specifically recognized by Spring Security to override the default CSRF ChannelInterceptor.
+   */
+  @Bean
+  public ChannelInterceptor csrfChannelInterceptor() {
+      // Returning a no-op ChannelInterceptor effectively disables the CSRF check
+      return new ChannelInterceptor() {};
   }
 }
