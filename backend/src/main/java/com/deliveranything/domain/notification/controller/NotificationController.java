@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,7 +35,7 @@ public class NotificationController {
   private final EmitterRepository emitterRepository;
 
   @Operation(summary = "SSE 구독", description = "SSE를 통해 실시간 알림을 구독합니다. 각 기기별로 고유한 deviceId를 헤더(X-Device-ID)에 담아 요청해야 합니다.")
-  @GetMapping("/stream")
+  @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter subscribe(
       @Parameter(description = "구독하는 기기의 고유 ID", required = true, in = ParameterIn.HEADER)
       @RequestHeader("X-Device-ID") String deviceId,
@@ -45,7 +46,7 @@ public class NotificationController {
       throw new CustomException(ErrorCode.PROFILE_REQUIRED);
     }
 
-    SseEmitter emitter = new SseEmitter(0L);
+    SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);
     emitterRepository.save(profileId, deviceId, emitter);
 
     // 연결 종료 시 Emitter 제거

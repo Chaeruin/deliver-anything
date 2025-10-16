@@ -114,6 +114,7 @@ public class SecurityConfig {
     configuration.setAllowedOriginPatterns(List.of(
         "http://localhost:*",
         "https://localhost:*",
+        "https://cdpn.io",
         "https://www.deliver-anything.shop",
         "https://api.deliver-anything.shop"
     ));
@@ -140,7 +141,6 @@ public class SecurityConfig {
 
     return source;
   }
-
 
   @Bean
   public static PasswordEncoder passwordEncoder() {  // 순환 참조 해결을 위해 static 추가
