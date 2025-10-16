@@ -114,7 +114,7 @@ public class SecurityConfig {
     configuration.setAllowedOriginPatterns(List.of(
         "http://localhost:*",
         "https://localhost:*",
-        "https://codepen.io",
+        "https://cdpn.io",
         "https://www.deliver-anything.shop",
         "https://api.deliver-anything.shop"
     ));
