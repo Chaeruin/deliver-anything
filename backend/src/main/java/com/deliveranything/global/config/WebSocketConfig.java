@@ -52,12 +52,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   public void registerStompEndpoints(StompEndpointRegistry registry) {
     registry.setErrorHandler(stompErrorHandler);
     registry.addEndpoint("/ws")
-        .setAllowedOriginPatterns("http://localhost:*",
-            "https://localhost:*",
-            "https://cdpn.io",
-            "https://www.deliver-anything.shop",
-            "https://api.deliver-anything.shop"
-        )
+        .setAllowedOriginPatterns("*")
         .withSockJS();
   }
 
