@@ -56,6 +56,9 @@ public class ProfileService {
       throw new CustomException(ErrorCode.PROFILE_ALREADY_EXISTS);
     }
 
+    // 이전 활성 프로필 ID 저장 (이벤트 발행용)
+    Long oldProfileId = user.getCurrentActiveProfileId();
+
     // 1단계: Profile 생성
     Profile profile = Profile.builder()
         .user(user)
@@ -66,16 +69,13 @@ public class ProfileService {
     // 2단계: 세부 프로필 생성 (CustomException은 그대로 전파)
     createDetailedProfile(profile, profileType, profileData);
 
-    // 3단계: 첫 프로필이면 자동으로 활성화
-    if (!user.hasActiveProfile()) {
-      user.setCurrentActiveProfile(profile);
-      userRepository.save(user);
-      log.info("첫 프로필 생성 및 활성화: userId={}, profileId={}, profileType={}",
-          user.getId(), profile.getId(), profileType);
-    } else {
-      log.info("추가 프로필 생성 완료: userId={}, profileId={}, profileType={}",
-          user.getId(), profile.getId(), profileType);
-    }
+    // 3단계: 프로필이면 자동으로 엑티브 프로필로
+    user.setCurrentActiveProfile(profile);
+    userRepository.save(user);
+
+    log.info("프로필 생성 및 활성화 완료: userId={}, profileId={}, profileType={}, " +
+             "previousProfileId={}",
+        user.getId(), profile.getId(), profileType, oldProfileId);
 
     return profile;
   }
