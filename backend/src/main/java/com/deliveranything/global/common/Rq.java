@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
@@ -248,5 +249,24 @@ public class Rq {
   @SneakyThrows
   public void sendRedirect(String url) {
     resp.sendRedirect(url);
+  }
+
+  /**
+   * X-Device-ID 헤더 조회 및 자동 생성
+   *
+   * - 헤더에 Device ID가 있으면 그대로 반환
+   * - 없으면 UUID 생성 후 응답 헤더에 추가
+   *
+   * @return Device ID (항상 null 아님)
+   */
+  public String getDeviceId() {
+    String deviceId = getHeader("X-Device-ID", null);
+
+    if (deviceId == null || deviceId.isBlank()) {
+      deviceId = UUID.randomUUID().toString();
+      resp.addHeader("X-Device-ID", deviceId);
+    }
+
+    return deviceId;
   }
 }

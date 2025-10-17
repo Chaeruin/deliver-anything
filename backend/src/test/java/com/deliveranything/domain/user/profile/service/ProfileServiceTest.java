@@ -75,7 +75,6 @@ class ProfileServiceTest {
     void createProfile_first_customer_success() {
       User mockUser = mock(User.class);
       when(mockUser.getId()).thenReturn(1L);
-      when(mockUser.hasActiveProfile()).thenReturn(false);
 
       when(profileRepository.existsByUserIdAndType(1L, ProfileType.CUSTOMER)).thenReturn(false);
 
@@ -104,7 +103,6 @@ class ProfileServiceTest {
     void createProfile_additional_seller_success() {
       User mockUser = mock(User.class);
       when(mockUser.getId()).thenReturn(1L);
-      when(mockUser.hasActiveProfile()).thenReturn(true);
 
       when(profileRepository.existsByUserIdAndType(1L, ProfileType.SELLER)).thenReturn(false);
       when(sellerProfileRepository.existsByBusinessCertificateNumber(anyString()))
@@ -127,8 +125,8 @@ class ProfileServiceTest {
       assertNotNull(result);
       verify(profileRepository, times(1)).save(any(Profile.class));
       verify(sellerProfileRepository, times(1)).save(any(SellerProfile.class));
-      verify(mockUser, never()).setCurrentActiveProfile(any());
-      verify(userRepository, never()).save(any());
+      verify(mockUser, times(1)).setCurrentActiveProfile(any(Profile.class));
+      verify(userRepository, times(1)).save(mockUser);
     }
 
     @Test
@@ -136,7 +134,6 @@ class ProfileServiceTest {
     void createProfile_rider_success() {
       User mockUser = mock(User.class);
       when(mockUser.getId()).thenReturn(1L);
-      when(mockUser.hasActiveProfile()).thenReturn(false);
 
       when(profileRepository.existsByUserIdAndType(1L, ProfileType.RIDER)).thenReturn(false);
 
@@ -156,6 +153,10 @@ class ProfileServiceTest {
       assertNotNull(result);
       verify(profileRepository, times(1)).save(any(Profile.class));
       verify(riderProfileRepository, times(1)).save(any(RiderProfile.class));
+      verify(mockUser, times(1)).setCurrentActiveProfile(any(Profile.class));
+      verify(userRepository, times(1)).save(mockUser);
+      verify(mockUser, times(1)).setCurrentActiveProfile(any(Profile.class));
+      verify(userRepository, times(1)).save(mockUser);
     }
 
     @Test

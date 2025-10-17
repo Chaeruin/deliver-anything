@@ -194,8 +194,9 @@ public class UserController {
   )
   public ResponseEntity<ApiResponse<CreateProfileResponse>> createProfile(
       @Valid @RequestBody CreateProfileRequest request) {
-
     User currentUser = rq.getActor();
+    String deviceId = rq.getDeviceId();
+    String oldAccessToken = rq.getAccessTokenFromHeader();// ← rq에서 꺼냄
     log.info("프로필 생성 요청: userId={}, profileType={}",
         currentUser.getId(), request.profileType());
 
@@ -206,13 +207,26 @@ public class UserController {
         request.profileData()
     );
 
+    SwitchProfileResult switchResult = authService.switchProfileWithTokenReissue(
+        currentUser.getId(),
+        request.profileType(),
+        oldAccessToken,
+        deviceId  // ← rq에서 가져온 값 사용
+    );
+
+    // 새 Access Token 설정
+    rq.setAccessToken(switchResult.accessToken());
+
+    log.info("프로필 생성 및 토큰 재발급 완료: userId={}, profileId={}, profileType={}",
+        currentUser.getId(), newProfile.getId(), request.profileType());
+
     // 응답 생성
     CreateProfileResponse response = CreateProfileResponse.builder()
         .userId(currentUser.getId())
         .profileType(request.profileType())
         .profileId(newProfile.getId())
         .nickname(getNicknameFromProfileData(request.profileData()))
-        .isActive(newProfile.isActive())
+        .isActive(true)
         .message(String.format("%s 프로필이 생성되었습니다.",
             request.profileType().getDescription()))
         .build();
