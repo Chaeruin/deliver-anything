@@ -1,6 +1,6 @@
 package com.deliveranything.domain.order.subscriber;
 
-import com.deliveranything.domain.order.handler.StockEventHandler;
+import com.deliveranything.domain.order.handler.PaymentEventHandler;
 import com.deliveranything.global.enums.RedisTopic;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -15,21 +15,21 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class StockEventSubscriber implements MessageListener {
+public class PaymentEventSubscriber implements MessageListener {
 
   private final RedisMessageListenerContainer container;
-  private final StockEventHandler stockEventHandler;
+  private final PaymentEventHandler paymentEventHandler;
 
   @PostConstruct
   public void registerListener() {
-    container.addMessageListener(this, new PatternTopic(RedisTopic.STOCK_EVENT.getPattern()));
+    container.addMessageListener(this, new PatternTopic(RedisTopic.PAYMENT_EVENT.getPattern()));
   }
 
   @Override
   public void onMessage(@NonNull Message message, byte[] pattern) {
-    String topic = new String(pattern);
+    String topic = new String(message.getChannel());
     String json = new String(message.getBody());
     log.debug("Received Redis event topic={}, body={}", topic, json);
-    stockEventHandler.handle(topic, json);
+    paymentEventHandler.handle(topic, json);
   }
 }

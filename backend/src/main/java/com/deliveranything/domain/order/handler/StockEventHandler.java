@@ -46,7 +46,7 @@ public class StockEventHandler {
         default -> log.warn("Unknown topic: {}", topic);
       }
     } catch (Exception e) {
-      log.error("Failed to process order event [{}]: {}", topic, e.getMessage(), e);
+      log.error("Failed to process stock event in order [{}]: {}", topic, e.getMessage(), e);
     }
   }
 }
