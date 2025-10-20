@@ -25,10 +25,10 @@ public class StoreDocument {
   @Id
   private Long id;
 
-  @Field(type = FieldType.Text, name = "name")
+  @Field(type = FieldType.Text, name = "name", analyzer = "nori")
   private String name;
 
-  @Field(type = FieldType.Text, name = "description")
+  @Field(type = FieldType.Text, name = "description", analyzer = "nori")
   private String description;
 
   // 검색 필터링을 위한 카테고리 ID
@@ -55,7 +55,7 @@ public class StoreDocument {
 
   @Setter
   @Builder.Default
-  @Field(type = FieldType.Text, name = "keywords")
+  @Field(type = FieldType.Text, name = "keywords", analyzer = "nori")
   private List<String> keywords = new ArrayList<>();
 
   public static StoreDocument from(Store store) {

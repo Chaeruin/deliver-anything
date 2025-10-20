@@ -51,7 +51,7 @@ public class ReactiveRiderEtaService {
     GeoResults<RedisGeoCommands.GeoLocation<String>> nearbyRiders =
         redisTemplate.opsForGeo().search(
             RIDER_GEO_KEY,
-            GeoReference.fromCoordinate(customerLat, customerLon),
+            GeoReference.fromCoordinate(customerLon, customerLat),
             new Distance(radiusKm, Metrics.KILOMETERS),
             RedisGeoCommands.GeoSearchCommandArgs.newGeoSearchArgs().includeDistance()
         );
