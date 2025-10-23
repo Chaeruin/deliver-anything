@@ -17,6 +17,7 @@ public class S3Config {
   public S3Presigner s3Presigner() {
     return S3Presigner.builder()
         .region(Region.of(region))
+//        .credentialsProvider(DefaultCredentialsProvider.create()) 로컬에서 aws configure 등록 후 사용
         .credentialsProvider(InstanceProfileCredentialsProvider.builder().build())
         .build();
   }
